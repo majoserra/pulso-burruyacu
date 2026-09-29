@@ -2,514 +2,930 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>El Pulso de Burruyacú</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prototipo 3D - Burruyacú</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
 <style>
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  overflow: hidden;
-  font-family: Arial, Helvetica, sans-serif;
-  background: #101318;
-  color: white;
-}
-
-#app {
-  width: 100vw;
-  height: 100vh;
-  position: relative;
-}
-
-canvas {
-  display: block;
-}
-
-/* ============================================================
-   SPLASH
-   ============================================================ */
-
-#splash {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: #101318;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity .6s ease;
-}
-
-#splashContent {
-  text-align: center;
-  max-width: 700px;
-  padding: 30px;
-}
-
-#splash h1 {
-  font-size: 52px;
-  margin: 0 0 12px;
-}
-
-#splash p {
-  font-size: 18px;
-  opacity: .75;
-  line-height: 1.5;
-}
-
-#startButton {
-  margin-top: 25px;
-  padding: 13px 25px;
-  border: 0;
-  border-radius: 10px;
-  background: #ff69b4;
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-#startButton:hover {
-  transform: scale(1.03);
-}
-
-/* ============================================================
-   DROPZONE
-   ============================================================ */
-
-#dropZone {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  background: rgba(15,18,25,.9);
-  border: 1px dashed rgba(255,255,255,.3);
-  border-radius: 10px;
-  padding: 10px 15px;
-  font-size: 12px;
-  display: none;
-}
-
-/* ============================================================
-   SIDEBAR
-   ============================================================ */
-
-#sidebar {
-  position: fixed;
-  left: 18px;
-  top: 18px;
-  bottom: 18px;
-  width: 270px;
-  z-index: 20;
-
-  background: rgba(18,22,29,.92);
-  backdrop-filter: blur(12px);
-
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 16px;
-
-  padding: 18px;
-
-  overflow-y: auto;
-
-  box-shadow: 0 10px 40px rgba(0,0,0,.3);
-}
-
-#sidebar h2 {
-  margin: 0 0 4px;
-  font-size: 22px;
-}
-
-.subtitle {
-  font-size: 12px;
-  opacity: .6;
-  margin-bottom: 18px;
-}
-
-.yearToggle {
-  display: flex;
-  gap: 5px;
-  background: rgba(255,255,255,.06);
-  padding: 4px;
-  border-radius: 9px;
-  margin-bottom: 16px;
-}
-
-.yearBtn {
-  flex: 1;
-  border: 0;
-  background: transparent;
-  color: white;
-  padding: 8px;
-  border-radius: 7px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.yearBtn.active {
-  background: rgba(255,255,255,.16);
-}
-
-.cropItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  padding: 9px;
-  margin-bottom: 5px;
-
-  border-radius: 9px;
-  cursor: pointer;
-
-  transition: background .2s ease;
-}
-
-.cropItem:hover {
-  background: rgba(255,255,255,.08);
-}
-
-.cropItem.active {
-  background: rgba(255,255,255,.12);
-}
-
-.cropColor {
-  width: 15px;
-  height: 15px;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
-.cropName {
-  font-size: 13px;
-}
-
-.cropArea {
-  margin-left: auto;
-  font-size: 11px;
-  opacity: .6;
-}
-
-/* ============================================================
-   COMPARE
-   ============================================================ */
-
-#comparePanel {
-  margin-top: 18px;
-  padding-top: 15px;
-  border-top: 1px solid rgba(255,255,255,.1);
-}
-
-#comparePanel h3 {
-  font-size: 14px;
-  margin: 0 0 10px;
-}
-
-.chartContainer {
-  height: 180px;
-  position: relative;
-}
-
-/* ============================================================
-   INFO CARD
-   ============================================================ */
-
-#infoCard {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-
-  width: 300px;
-
-  z-index: 30;
-
-  background: rgba(18,22,29,.94);
-  backdrop-filter: blur(12px);
-
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 14px;
-
-  padding: 16px;
-
-  box-shadow: 0 10px 40px rgba(0,0,0,.3);
-}
-
-#infoCard h3 {
-  margin: 0 0 5px;
-  font-size: 18px;
-}
-
-#infoCard p {
-  margin: 4px 0;
-  font-size: 12px;
-  opacity: .75;
-}
-
-/* ============================================================
-   RELIEF
-   ============================================================ */
-
-#reliefBox {
-  position: fixed;
-  right: 20px;
-  top: 20px;
-
-  z-index: 30;
-
-  background: rgba(18,22,29,.9);
-  border-radius: 12px;
-
-  padding: 12px 15px;
-}
-
-#reliefBox label {
-  display: block;
-  font-size: 11px;
-  opacity: .7;
-  margin-bottom: 5px;
-}
-
-#reliefSlider {
-  width: 160px;
-}
-
-/* ============================================================
-   TUTORIAL
-   ============================================================ */
-
-#tutorial {
-  position: fixed;
-  right: 20px;
-  top: 100px;
-
-  z-index: 30;
-
-  max-width: 280px;
-
-  background: rgba(18,22,29,.92);
-  border-radius: 12px;
-
-  padding: 14px;
-
-  font-size: 12px;
-
-  display: none;
-}
-
-#tutorial button {
-  margin-top: 10px;
-  border: 0;
-  border-radius: 7px;
-  padding: 7px 12px;
-  cursor: pointer;
-}
-
-/* ============================================================
-   TOOLTIP
-   ============================================================ */
-
-#tooltip {
-  position: fixed;
-
-  z-index: 50;
-
-  pointer-events: none;
-
-  background: rgba(0,0,0,.8);
-
-  padding: 6px 9px;
-
-  border-radius: 6px;
-
-  font-size: 11px;
-
-  display: none;
-}
-
-/* ============================================================
-   RIGHT STACK
-   ============================================================ */
-
-#rightStack {
-  position: fixed;
-  right: 20px;
-  top: 20px;
-  z-index: 30;
-}
-
+  :root {
+    --bg: #0e1116;
+    --panel: rgba(20,24,30,0.9);
+    --text: #e8eaed;
+    --muted: #9aa0a6;
+    --accent: #FF69B4;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f4f5f7;
+      --panel: rgba(255,255,255,0.92);
+      --text: #1a1c1f;
+      --muted: #55595e;
+    }
+  }
+
+  :root[data-theme="light"] {
+    --bg: #f4f5f7;
+    --panel: rgba(255,255,255,0.92);
+    --text: #1a1c1f;
+    --muted: #55595e;
+  }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+  }
+
+  #canvas-wrap {
+    position: fixed;
+    inset: 0;
+  }
+
+  canvas {
+    display: block;
+  }
+
+  #dropzone {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+  }
+
+  #dropzone.hidden {
+    display: none;
+  }
+
+  #splash {
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, #171c24 0%, var(--bg) 70%);
+    text-align: center;
+    padding: 24px;
+  }
+
+  #splash.hidden {
+    display: none;
+  }
+
+  #splash .emoji {
+    font-size: 2.6rem;
+    margin-bottom: 10px;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  #splash h1 {
+    font-size: 1.5rem;
+    margin: 0 0 6px;
+    letter-spacing: 0.3px;
+  }
+
+  #splash p.tagline {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin: 0 0 26px;
+    max-width: 320px;
+  }
+
+  #splash .spinner {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 3px solid rgba(255,105,180,0.25);
+    border-top-color: var(--accent);
+    animation: spin 0.9s linear infinite;
+    margin-bottom: 14px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  #splash .status-txt {
+    color: var(--muted);
+    font-size: 0.78rem;
+    min-height: 16px;
+  }
+
+  #splash.fade-out {
+    animation: fadeOut 0.5s ease forwards;
+  }
+
+  @keyframes fadeOut {
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid rgba(128,128,128,0.25);
+    border-radius: 14px;
+    padding: 28px;
+    max-width: 460px;
+    width: 90%;
+    text-align: center;
+  }
+
+  .card h1 {
+    font-size: 1.15rem;
+    margin: 0 0 6px;
+  }
+
+  .card p {
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.4;
+    margin: 6px 0 18px;
+  }
+
+  .drop-slot {
+    border: 2px dashed rgba(128,128,128,0.4);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .drop-slot.filled {
+    border-color: #3ddc84;
+    color: #3ddc84;
+  }
+
+  .drop-slot.dragover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  input[type=file] {
+    display: none;
+  }
+
+  .pick-btn {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: rgba(128,128,128,0.15);
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  #buildBtn {
+    margin-top: 8px;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #1a1c1f;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  #buildBtn.ready {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #status {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 10px;
+    min-height: 16px;
+  }
+
+  #titleChip {
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 7px 16px;
+    text-align: center;
+    display: none;
+    pointer-events: none;
+  }
+
+  #titleChip.show {
+    display: block;
+  }
+
+  #titleChip .t1 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  #titleChip .t2 {
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  #sidebar {
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    left: 14px;
+    z-index: 10;
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 0.75rem;
+    width: 230px;
+    max-width: 70vw;
+    max-height: 66vh;
+    overflow-y: auto;
+    display: none;
+  }
+
+  #sidebar.show {
+    display: block;
+  }
+
+  #sidebarHeader {
+    margin-bottom: 8px;
+  }
+
+  #sidebarHeader .title {
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+
+  #sidebarHeader .subtitle {
+    color: var(--muted);
+    font-size: 0.68rem;
+    margin-top: 2px;
+  }
+
+  @media (max-width: 700px) {
+    #sidebar {
+      width: auto;
+      max-width: 62vw;
+      max-height: 46px;
+      overflow: hidden;
+      transition: max-height 0.25s ease;
+      cursor: pointer;
+    }
+
+    #sidebar.expanded {
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+
+    #sidebarHeader::after {
+      content: '▾ tocar para ver cultivos';
+      display: block;
+      font-size: 0.62rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    #sidebar.expanded #sidebarHeader::after {
+      content: '▴ tocar para cerrar';
+    }
+  }
+
+  .crop-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    padding: 6px 5px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border: 1px solid transparent;
+  }
+
+  .crop-row:hover {
+    background: rgba(128,128,128,0.12);
+  }
+
+  .crop-row.active {
+    background: rgba(128,128,128,0.16);
+    border-color: rgba(128,128,128,0.35);
+  }
+
+  .crop-row span.sw {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+
+  .crop-row-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .crop-row-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .crop-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .crop-value {
+    color: var(--muted);
+    white-space: nowrap;
+    font-size: 0.7rem;
+  }
+
+  .crop-bar-track {
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(128,128,128,0.18);
+    margin-top: 4px;
+    overflow: hidden;
+  }
+
+  .crop-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+  }
+
+  .crop-row-all {
+    margin-bottom: 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(128,128,128,0.25);
+  }
+
+  .crop-row-all .crop-name {
+    font-weight: 600;
+  }
+
+  .crop-row-all span.sw {
+    border-radius: 50%;
+  }
+
+  #yearToggle {
+    display: none;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  #yearToggle .year-btn {
+    flex: 1;
+    padding: 6px 0;
+    border-radius: 8px;
+    border: 1px solid rgba(128,128,128,0.35);
+    background: transparent;
+    color: var(--text);
+    font-size: 0.72rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  #yearToggle .year-btn.active {
+    background: var(--accent);
+    color: #1a1c1f;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  #compareToggleBtn {
+    display: none;
+    cursor: pointer;
+    margin-bottom: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: rgba(128,128,128,0.14);
+    font-size: 0.72rem;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  #compareToggleBtn:hover {
+    background: rgba(128,128,128,0.24);
+  }
+
+  #compareToggleBtn.show {
+    display: block;
+  }
+
+  #info {
+    position: fixed;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-size: 0.85rem;
+    display: none;
+    text-align: left;
+    max-width: 92vw;
+  }
+
+  #info.show {
+    display: block;
+  }
+
+  #info .info-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+  }
+
+  #info .info-stats {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  #info .stat {
+    display: flex;
+    flex-direction: column;
+  }
+
+  #info .stat-label {
+    font-size: 0.62rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  #info .stat-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  #reliefControl {
+    position: fixed;
+    right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    z-index: 10;
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    display: none;
+  }
+
+  #reliefControl.show {
+    display: block;
+  }
+
+  #reliefControl label {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  #reliefControl input[type=range] {
+    width: 130px;
+  }
+
+  #tutorial {
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.5);
+  }
+
+  #tutorial.show {
+    display: flex;
+  }
+
+  #tutorial .card {
+    max-width: 380px;
+    text-align: left;
+  }
+
+  #tutorial .card h1 {
+    text-align: center;
+  }
+
+  #tutorial .step {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+    align-items: flex-start;
+  }
+
+  #tutorial .step .emoji {
+    font-size: 1.2rem;
+  }
+
+  #tutorial .step b {
+    display: block;
+    font-size: 0.85rem;
+  }
+
+  #tutorial .step span.desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  #tutorial button {
+    margin-top: 4px;
+  }
+
+  #tutorialCloseBtn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #1a1c1f;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  #tooltip {
+    position: fixed;
+    z-index: 15;
+    pointer-events: none;
+    background: var(--panel);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    display: none;
+    white-space: nowrap;
+    transform: translate(14px, -50%);
+  }
+
+  #tooltip.show {
+    display: block;
+  }
+
+  #tooltip b {
+    color: var(--accent);
+  }
+
+  #rightStack {
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    right: 14px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    max-width: 300px;
+  }
+
+  #hint {
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    display: none;
+  }
+
+  #hint.show {
+    display: block;
+  }
+
+  #comparePanel {
+    display: none;
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 0.75rem;
+    width: 280px;
+    max-width: 78vw;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  #comparePanel.show {
+    display: block;
+  }
+
+  #comparePanel .cmp-total {
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  #comparePanel .cmp-total-sub {
+    color: var(--muted);
+    margin-bottom: 12px;
+    font-size: 0.7rem;
+  }
+
+  #comparePanel .cmp-row {
+    margin-bottom: 12px;
+  }
+
+  #comparePanel .cmp-row-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  #comparePanel .cmp-name {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  #comparePanel .cmp-name .sw {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  #comparePanel .cmp-delta {
+    font-weight: 600;
+    white-space: nowrap;
+    font-size: 0.7rem;
+  }
+
+  #comparePanel .cmp-bar-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    font-size: 0.68rem;
+    color: var(--muted);
+  }
+
+  #comparePanel .cmp-bar-year {
+    width: 36px;
+    flex-shrink: 0;
+  }
+
+  #comparePanel .cmp-bar-track {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(128,128,128,0.15);
+    overflow: hidden;
+  }
+
+  #comparePanel .cmp-bar-fill {
+    height: 100%;
+  }
+
+  #comparePanel .cmp-bar-value {
+    width: 62px;
+    text-align: right;
+    flex-shrink: 0;
+    color: var(--text);
+  }
+
+  #comparePanel .cmp-donuts {
+    display: flex;
+    gap: 10px;
+  }
+
+  #comparePanel .cmp-donuts-top {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(128,128,128,0.2);
+  }
+
+  #comparePanel .cmp-donut-box {
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+  }
+
+  #comparePanel .cmp-donut-title {
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  #comparePanel .cmp-donut-box canvas {
+    max-width: 100%;
+  }
 </style>
 </head>
 
 <body>
 
-<div id="app">
-
-  <!-- ========================================================
-       SPLASH
-       ======================================================== -->
-
-  <div id="splash">
-
-    <div id="splashContent">
-
-      <h1>El Pulso de Burruyacú</h1>
-
-      <p>
-        Una exploración visual del territorio agrícola de Burruyacú
-        a partir de datos satelitales, clasificación de cultivos
-        y modelos digitales de elevación.
-      </p>
-
-      <button id="startButton">
-        Explorar el territorio
-      </button>
-
-    </div>
-
-  </div>
-
-
-  <!-- ========================================================
-       DROPZONE
-       ======================================================== -->
-
-  <div id="dropZone">
-    Arrastrá aquí los archivos si querés reemplazar los datos.
-  </div>
-
-
-  <!-- ========================================================
-       SIDEBAR
-       ======================================================== -->
-
-  <aside id="sidebar">
-
-    <h2>El Pulso de Burruyacú</h2>
-
-    <div class="subtitle">
-      Visualización agrícola interactiva
-    </div>
-
-    <div class="yearToggle">
-
-      <button
-        class="yearBtn active"
-        id="btnActual">
-        Actual
-      </button>
-
-      <button
-        class="yearBtn"
-        id="btnHist">
-        2018
-      </button>
-
-    </div>
-
-    <div id="cropList"></div>
-
-
-    <div id="comparePanel">
-
-      <h3>Comparación temporal</h3>
-
-      <div class="chartContainer">
-        <canvas id="comparisonChart"></canvas>
-      </div>
-
-    </div>
-
-  </aside>
-
-
-  <!-- ========================================================
-       INFO CARD
-       ======================================================== -->
-
-  <div id="infoCard">
-
-    <h3>Explorá el territorio</h3>
-
-    <p>
-      Hacé clic sobre el terreno para consultar
-      la clase agrícola correspondiente.
-    </p>
-
-    <p>
-      También podés seleccionar un cultivo desde
-      el panel lateral.
-    </p>
-
-  </div>
-
-
-  <!-- ========================================================
-       RELIEF
-       ======================================================== -->
-
-  <div id="reliefBox">
-
-    <label for="reliefSlider">
-      Exageración del relieve
-    </label>
-
-    <input
-      type="range"
-      id="reliefSlider"
-      min="0"
-      max="3"
-      step="0.1"
-      value="1">
-
-  </div>
-
-
-  <!-- ========================================================
-       TUTORIAL
-       ======================================================== -->
-
-  <div id="tutorial">
-
-    <strong>Cómo explorar</strong>
-
-    <p>
-      Rotá el terreno con el mouse, acercate con la rueda
-      y hacé clic sobre una zona agrícola.
-    </p>
-
-    <button id="closeTutorial">
-      Entendido
-    </button>
-
-  </div>
-
-
-  <!-- ========================================================
-       TOOLTIP
-       ======================================================== -->
-
-  <div id="tooltip"></div>
-
+<div id="splash">
+  <div class="emoji">🌎</div>
+  <h1>El Pulso de Burruyacú</h1>
+  <p class="tagline">Territorio agrícola visto desde el espacio — relieve, cultivos y su evolución en el tiempo.</p>
+  <div class="spinner"></div>
+  <div class="status-txt" id="statusSplash">Cargando datos del territorio...</div>
 </div>
 
+<div id="dropzone" class="hidden">
+  <div class="card">
+    <h1>Prototipo 3D · Burruyacú</h1>
+    <p>Cargá tus archivos GeoTIFF (mismo ROI). Todo se procesa en tu navegador, no se sube a ningún servidor.</p>
+
+    <div class="drop-slot" id="slotDem" data-kind="dem">
+      <div class="slot-msg">
+        DEM (elevación) — arrastrá el .tif o
+        <label class="pick-btn">
+          elegir archivo
+          <input type="file" id="fileDem" accept=".tif,.tiff">
+        </label>
+      </div>
+    </div>
+
+    <div class="drop-slot" id="slotClasif" data-kind="clasif">
+      <div class="slot-msg">
+        Clasificación de cultivos — arrastrá el .tif o
+        <label class="pick-btn">
+          elegir archivo
+          <input type="file" id="fileClasif" accept=".tif,.tiff">
+        </label>
+      </div>
+    </div>
+
+    <div class="drop-slot" id="slotAreas" data-kind="areas">
+      Superficie por clase (opcional, el .json que exportás del script) — arrastrá el .json o
+      <label class="pick-btn">
+        elegir archivo
+        <input type="file" id="fileAreas" accept=".json">
+      </label>
+    </div>
+
+    <p style="margin:16px 0 10px;text-align:left;font-size:0.78rem;">
+      🕐 Comparación con un año histórico (opcional)
+    </p>
+
+    <div class="drop-slot" id="slotClasifHist" data-kind="clasifHist">
+      <div class="slot-msg">
+        Clasificación de otro año (mismo ROI) — arrastrá el .tif o
+        <label class="pick-btn">
+          elegir archivo
+          <input type="file" id="fileClasifHist" accept=".tif,.tiff">
+        </label>
+      </div>
+
+      <div style="margin-top:8px;text-align:left;">
+        <label style="font-size:0.72rem;">
+          Año de esa clasificación:
+          <input
+            type="text"
+            id="anioHistInput"
+            value="2018"
+            maxlength="4"
+            style="width:56px;margin-left:6px;padding:3px 6px;border-radius:6px;border:1px solid rgba(128,128,128,0.35);background:transparent;color:inherit;font-family:inherit;"
+          >
+        </label>
+      </div>
+    </div>
+
+    <div class="drop-slot" id="slotAreasHist" data-kind="areasHist">
+      Superficie por clase de ese año (opcional) — arrastrá el .json o
+      <label class="pick-btn">
+        elegir archivo
+        <input type="file" id="fileAreasHist" accept=".json">
+      </label>
+    </div>
+
+    <button id="buildBtn">Construir terreno 3D</button>
+    <div id="status"></div>
+  </div>
+</div>
+
+<div id="canvas-wrap"></div>
+
+<div id="titleChip">
+  <div class="t1">🌎 El Pulso de Burruyacú</div>
+  <div class="t2">Explorá la estructura agrícola del territorio</div>
+</div>
+
+<div id="sidebar">
+  <div
+    id="sidebarHeader"
+    onclick="if(window.innerWidth<=700){document.getElementById('sidebar').classList.toggle('expanded')}"
+  >
+    <div class="title">Cultivos</div>
+    <div class="subtitle">Tocá un cultivo para resaltarlo · "Ver todos" para volver</div>
+  </div>
+
+  <div id="yearToggle"></div>
+  <div id="compareToggleBtn"></div>
+  <div id="cropList"></div>
+</div>
+
+<div id="reliefControl">
+  <label>
+    Relieve
+    <span id="reliefValue">1.0x</span>
+  </label>
+  <input type="range" id="reliefRange" min="1" max="3" step="0.1" value="1">
+</div>
+
+<div id="rightStack">
+  <div
+    id="hint"
+    style="cursor:pointer"
+    onclick="document.getElementById('tutorial').classList.add('show')"
+    title="Ver el tutorial de nuevo"
+  >
+    Arrastrá para rotar · rueda para zoom · pasá el mouse para identificar el cultivo · hacé click para marcar el punto y ver la superficie · (tocá acá para ver la ayuda)
+  </div>
+
+  <div id="comparePanel"></div>
+</div>
+
+<div id="info"></div>
+<div id="tooltip"></div>
+
+<div id="tutorial">
+  <div class="card">
+    <h1>Explorá Burruyacú</h1>
+
+    <div class="step">
+      <span class="emoji">🖱️</span>
+      <div>
+        <b>1. Rotá el territorio</b>
+        <span class="desc">Arrastrá para cambiar la perspectiva, rueda para hacer zoom.</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <span class="emoji">🌱</span>
+      <div>
+        <b>2. Elegí un cultivo</b>
+        <span class="desc">Usá la lista de la izquierda para resaltarlo en el terreno 3D.</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <span class="emoji">📍</span>
+      <div>
+        <b>3. Hacé click</b>
+        <span class="desc">Descubrí la superficie y la elevación de un punto exacto.</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <span class="emoji">⛰️</span>
+      <div>
+        <b>4. Ajustá el relieve</b>
+        <span class="desc">Con el control de abajo a la derecha, exagerá el terreno hasta 3x.</span>
+      </div>
+    </div>
+
+    <button
+      id="tutorialCloseBtn"
+      style="margin-top:14px;"
+      onclick="document.getElementById('tutorial').classList.remove('show')"
+    >
+      Entendido
+    </button>
+  </div>
+</div>
 
 <script>
 
-/* ============================================================
-   CONFIGURACIÓN
-   ============================================================ */
-
 const CLASES = {
-
   1: ["Caña de azúcar", "#FF69B4"],
   2: ["Citrus", "#FFA500"],
   3: ["Maíz", "#FFFF00"],
@@ -518,16 +934,854 @@ const CLASES = {
   6: ["Soja", "#8A2BE2"],
   7: ["Sorgo", "#FF4500"],
   8: ["Barbecho", "#D2B48C"]
-
 };
 
 const MESH_GRID = 200;
-
 const TEX_SIZE = 1024;
+
+/*
+ * ============================================================
+ * CONFIGURACIÓN DEL ÍCONO DE CAÑA
+ * ============================================================
+ *
+ * El archivo debe estar en:
+ *
+ * data/cana.png
+ *
+ * No ponemos un ícono por cada píxel porque eso puede ser
+ * demasiado pesado. Se genera una cantidad representativa
+ * de íconos sobre las zonas clasificadas como caña.
+ */
+
+const CANA_ICON_URL = 'data/cana.png';
+
+/*
+ * Cantidad máxima aproximada de íconos.
+ * Si hay muchísima caña, el sistema aumenta automáticamente
+ * el espaciamiento para no saturar el navegador.
+ */
+const MAX_CANA_ICONS = 650;
+
+/*
+ * Tamaño visual de cada ícono en unidades del terreno.
+ * Podés subirlo a 5.5 o 6 si querés que sean más grandes.
+ */
+const CANA_ICON_SIZE = 4.2;
 
 
 /* ============================================================
-   DATOS
+   VARIABLES GENERALES
+   ============================================================ */
+
+let filesLoaded = {
+  dem: null,
+  clasif: null,
+  clasifHist: null
+};
+
+let areasPorClase = null;
+let areasPorClaseHist = null;
+
+
+/* ============================================================
+   ESTADO DEL ÍCONO DE CAÑA
+   ============================================================ */
+
+let canaTextureGlobal = null;
+let canaTextureLoading = false;
+
+
+/* ============================================================
+   UTILIDADES
+   ============================================================ */
+
+function setStatus(msg) {
+  const el = document.getElementById('status');
+  const elSplash = document.getElementById('statusSplash');
+
+  if (el) el.textContent = msg;
+  if (elSplash) elSplash.textContent = msg;
+}
+
+const KIND_LABELS = {
+  dem: 'DEM: ',
+  clasif: 'Clasificación: ',
+  clasifHist: 'Clasificación histórica: '
+};
+
+
+function wireSlot(slotId, inputId, kind) {
+
+  const slot = document.getElementById(slotId);
+  const input = document.getElementById(inputId);
+
+  const mark = (file) => {
+
+    filesLoaded[kind] = file;
+    slot.classList.add('filled');
+
+    const msgEl =
+      slot.querySelector('.slot-msg') || slot;
+
+    msgEl.textContent =
+      KIND_LABELS[kind] + file.name;
+
+    checkReady();
+  };
+
+  input.addEventListener('change', e => {
+    if (e.target.files[0]) {
+      mark(e.target.files[0]);
+    }
+  });
+
+  slot.addEventListener('dragover', e => {
+    e.preventDefault();
+    slot.classList.add('dragover');
+  });
+
+  slot.addEventListener('dragleave', () => {
+    slot.classList.remove('dragover');
+  });
+
+  slot.addEventListener('drop', e => {
+
+    e.preventDefault();
+    slot.classList.remove('dragover');
+
+    if (e.dataTransfer.files[0]) {
+      mark(e.dataTransfer.files[0]);
+    }
+
+  });
+}
+
+
+wireSlot('slotDem', 'fileDem', 'dem');
+wireSlot('slotClasif', 'fileClasif', 'clasif');
+wireSlot('slotClasifHist', 'fileClasifHist', 'clasifHist');
+
+
+/* ============================================================
+   JSON DE SUPERFICIES
+   ============================================================ */
+
+function wireAreasSlot(slotId, inputId, label, setter) {
+
+  const slot = document.getElementById(slotId);
+  const input = document.getElementById(inputId);
+
+  const load = async (file) => {
+
+    try {
+
+      const text = await file.text();
+
+      setter(JSON.parse(text));
+
+      slot.classList.add('filled');
+      slot.textContent = label + file.name;
+
+    } catch (err) {
+
+      setter(null);
+
+      slot.classList.remove('filled');
+
+      slot.textContent =
+        'No se pudo leer ese JSON: ' + err.message;
+    }
+  };
+
+  input.addEventListener('change', e => {
+    if (e.target.files[0]) {
+      load(e.target.files[0]);
+    }
+  });
+
+  slot.addEventListener('dragover', e => {
+    e.preventDefault();
+    slot.classList.add('dragover');
+  });
+
+  slot.addEventListener('dragleave', () => {
+    slot.classList.remove('dragover');
+  });
+
+  slot.addEventListener('drop', e => {
+
+    e.preventDefault();
+    slot.classList.remove('dragover');
+
+    if (e.dataTransfer.files[0]) {
+      load(e.dataTransfer.files[0]);
+    }
+  });
+}
+
+
+wireAreasSlot(
+  'slotAreas',
+  'fileAreas',
+  'Superficies: ',
+  (v) => {
+    areasPorClase = v;
+  }
+);
+
+
+wireAreasSlot(
+  'slotAreasHist',
+  'fileAreasHist',
+  'Superficies históricas: ',
+  (v) => {
+    areasPorClaseHist = v;
+  }
+);
+
+
+/* ============================================================
+   FORMATO DE HECTÁREAS
+   ============================================================ */
+
+function formatHa(valor) {
+
+  return Number(valor).toLocaleString(
+    'es-AR',
+    {
+      maximumFractionDigits: 1
+    }
+  ) + ' ha';
+}
+
+
+/* ============================================================
+   ARCHIVOS
+   ============================================================ */
+
+function checkReady() {
+
+  const btn =
+    document.getElementById('buildBtn');
+
+  if (
+    filesLoaded.dem &&
+    filesLoaded.clasif
+  ) {
+    btn.classList.add('ready');
+  }
+}
+
+
+async function getArrayBuffer(source) {
+
+  if (source instanceof File) {
+    return await source.arrayBuffer();
+  }
+
+  const resp = await fetch(source);
+
+  if (!resp.ok) {
+    throw new Error(
+      'No se encontró ' +
+      source +
+      ' (HTTP ' +
+      resp.status +
+      ')'
+    );
+  }
+
+  return await resp.arrayBuffer();
+}
+
+
+async function readTiffFull(source) {
+
+  const buf =
+    await getArrayBuffer(source);
+
+  const tiff =
+    await GeoTIFF.fromArrayBuffer(buf);
+
+  const image =
+    await tiff.getImage();
+
+  const rasters =
+    await image.readRasters();
+
+  return {
+    rasters,
+    width: image.getWidth(),
+    height: image.getHeight()
+  };
+}
+
+
+/* ============================================================
+   REMUESTREO
+   ============================================================ */
+
+function sampleNearest(
+  srcArr,
+  srcW,
+  srcH,
+  dstN
+) {
+
+  const out =
+    new Float32Array(dstN * dstN);
+
+  for (let y = 0; y < dstN; y++) {
+
+    const sy =
+      Math.min(
+        srcH - 1,
+        Math.floor((y / dstN) * srcH)
+      );
+
+    for (let x = 0; x < dstN; x++) {
+
+      const sx =
+        Math.min(
+          srcW - 1,
+          Math.floor((x / dstN) * srcW)
+        );
+
+      out[y * dstN + x] =
+        srcArr[sy * srcW + sx];
+    }
+  }
+
+  return out;
+}
+
+
+function sampleBilinear(
+  srcArr,
+  srcW,
+  srcH,
+  dstN
+) {
+
+  const out =
+    new Float32Array(dstN * dstN);
+
+  for (let y = 0; y < dstN; y++) {
+
+    const fy =
+      (y / (dstN - 1)) *
+      (srcH - 1);
+
+    const y0 = Math.floor(fy);
+    const y1 =
+      Math.min(srcH - 1, y0 + 1);
+
+    const ty =
+      fy - y0;
+
+    for (let x = 0; x < dstN; x++) {
+
+      const fx =
+        (x / (dstN - 1)) *
+        (srcW - 1);
+
+      const x0 = Math.floor(fx);
+      const x1 =
+        Math.min(srcW - 1, x0 + 1);
+
+      const tx =
+        fx - x0;
+
+      const v00 =
+        srcArr[y0 * srcW + x0];
+
+      const v10 =
+        srcArr[y0 * srcW + x1];
+
+      const v01 =
+        srcArr[y1 * srcW + x0];
+
+      const v11 =
+        srcArr[y1 * srcW + x1];
+
+      const top =
+        v00 + (v10 - v00) * tx;
+
+      const bot =
+        v01 + (v11 - v01) * tx;
+
+      out[y * dstN + x] =
+        top + (bot - top) * ty;
+    }
+  }
+
+  return out;
+}
+
+
+function hexToRgb255(hex) {
+
+  const v =
+    parseInt(hex.slice(1), 16);
+
+  return [
+    (v >> 16) & 255,
+    (v >> 8) & 255,
+    v & 255
+  ];
+}
+
+
+/* ============================================================
+   TEXTURA DE CLASIFICACIÓN
+   ============================================================ */
+
+function buildColorTexture(clasifFull) {
+
+  const clasifTex =
+    sampleNearest(
+      clasifFull.rasters[0],
+      clasifFull.width,
+      clasifFull.height,
+      TEX_SIZE
+    );
+
+  const canvas =
+    document.createElement('canvas');
+
+  canvas.width = TEX_SIZE;
+  canvas.height = TEX_SIZE;
+
+  const ctx =
+    canvas.getContext('2d');
+
+  const img =
+    ctx.createImageData(
+      TEX_SIZE,
+      TEX_SIZE
+    );
+
+  for (
+    let i = 0;
+    i < TEX_SIZE * TEX_SIZE;
+    i++
+  ) {
+
+    const clase =
+      Math.round(clasifTex[i]);
+
+    const info =
+      CLASES[clase];
+
+    let r, g, b;
+
+    if (info) {
+
+      [r, g, b] =
+        hexToRgb255(info[1]);
+
+    } else {
+
+      r = 90;
+      g = 90;
+      b = 97;
+    }
+
+    const p = i * 4;
+
+    img.data[p] = r;
+    img.data[p + 1] = g;
+    img.data[p + 2] = b;
+    img.data[p + 3] = 255;
+  }
+
+  ctx.putImageData(
+    img,
+    0,
+    0
+  );
+
+  const baseColors =
+    new Uint8ClampedArray(
+      img.data
+    );
+
+  const texture =
+    new THREE.CanvasTexture(canvas);
+
+  texture.magFilter =
+    THREE.NearestFilter;
+
+  texture.minFilter =
+    THREE.NearestFilter;
+
+  texture.needsUpdate = true;
+
+  return {
+
+    texture,
+
+    canvas,
+
+    ctx,
+
+    baseColors,
+
+    clasifTex,
+
+    clasifLookup:
+      sampleNearest(
+        clasifFull.rasters[0],
+        clasifFull.width,
+        clasifFull.height,
+        MESH_GRID
+      )
+  };
+}
+
+
+/* ============================================================
+   CARGA DE LA IMAGEN DE CAÑA
+   ============================================================ */
+
+function cargarIconoCana(callback) {
+
+  /*
+   * Si ya está cargado, usamos directamente
+   * la textura existente.
+   */
+
+  if (canaTextureGlobal) {
+
+    callback(canaTextureGlobal);
+    return;
+  }
+
+  /*
+   * Evitamos iniciar varias cargas simultáneas.
+   */
+
+  if (canaTextureLoading) {
+
+    const esperar = setInterval(() => {
+
+      if (canaTextureGlobal) {
+
+        clearInterval(esperar);
+        callback(canaTextureGlobal);
+      }
+
+    }, 50);
+
+    return;
+  }
+
+  canaTextureLoading = true;
+
+  const loader =
+    new THREE.TextureLoader();
+
+  loader.load(
+
+    CANA_ICON_URL,
+
+    (texture) => {
+
+      texture.minFilter =
+        THREE.LinearFilter;
+
+      texture.magFilter =
+        THREE.LinearFilter;
+
+      texture.needsUpdate = true;
+
+      canaTextureGlobal =
+        texture;
+
+      canaTextureLoading =
+        false;
+
+      console.log(
+        '🌱 Ícono de caña cargado correctamente:',
+        CANA_ICON_URL
+      );
+
+      callback(texture);
+    },
+
+    undefined,
+
+    (error) => {
+
+      canaTextureLoading =
+        false;
+
+      console.warn(
+        'No se pudo cargar el ícono de caña:',
+        CANA_ICON_URL,
+        error
+      );
+    }
+  );
+}
+
+
+/* ============================================================
+   CONSTRUCCIÓN DE LA ESCENA
+   ============================================================ */
+
+async function construirEscena(
+  demSource,
+  clasifSource,
+  clasifHistSource,
+  anioHistManual
+) {
+
+  try {
+
+    setStatus(
+      'Leyendo DEM...'
+    );
+
+    const demFull =
+      await readTiffFull(demSource);
+
+    const demGrid =
+      sampleBilinear(
+        demFull.rasters[0],
+        demFull.width,
+        demFull.height,
+        MESH_GRID
+      );
+
+
+    setStatus(
+      'Leyendo clasificación...'
+    );
+
+    const clasifFull =
+      await readTiffFull(clasifSource);
+
+
+    setStatus(
+      'Pintando textura de colores...'
+    );
+
+    const {
+      texture,
+      canvas,
+      ctx,
+      baseColors,
+      clasifTex,
+      clasifLookup
+    } =
+      buildColorTexture(
+        clasifFull
+      );
+
+
+    let histBundle = null;
+
+
+    if (clasifHistSource) {
+
+      setStatus(
+        'Leyendo clasificación histórica...'
+      );
+
+      const clasifHistFull =
+        await readTiffFull(
+          clasifHistSource
+        );
+
+
+      setStatus(
+        'Pintando textura histórica...'
+      );
+
+      const b =
+        buildColorTexture(
+          clasifHistFull
+        );
+
+      const anioHist =
+        anioHistManual ||
+        (
+          document
+            .getElementById('anioHistInput')
+            .value || ''
+        ).trim() ||
+        'Histórico';
+
+
+      histBundle = {
+
+        texture:
+          b.texture,
+
+        texInfo: {
+
+          canvas:
+            b.canvas,
+
+          ctx:
+            b.ctx,
+
+          baseColors:
+            b.baseColors,
+
+          clasifTex:
+            b.clasifTex
+        },
+
+        clasifLookup:
+          b.clasifLookup,
+
+        anio:
+          anioHist
+      };
+    }
+
+
+    setStatus(
+      'Construyendo malla 3D...'
+    );
+
+
+    const aspect =
+      demFull.height /
+      demFull.width;
+
+
+    buildScene(
+
+      demGrid,
+
+      clasifLookup,
+
+      texture,
+
+      MESH_GRID,
+
+      aspect,
+
+      {
+        canvas,
+        ctx,
+        baseColors,
+        clasifTex
+      },
+
+      histBundle
+    );
+
+
+    document
+      .getElementById('dropzone')
+      .classList.add('hidden');
+
+
+    const splashEl =
+      document.getElementById('splash');
+
+
+    if (splashEl) {
+
+      splashEl.classList.add(
+        'fade-out'
+      );
+
+      setTimeout(() => {
+
+        splashEl.classList.add(
+          'hidden'
+        );
+
+      }, 550);
+    }
+
+
+    document
+      .getElementById('sidebar')
+      .classList.add('show');
+
+    document
+      .getElementById('titleChip')
+      .classList.add('show');
+
+    document
+      .getElementById('reliefControl')
+      .classList.add('show');
+
+    document
+      .getElementById('hint')
+      .classList.add('show');
+
+
+    let tutorialYaVisto = false;
+
+    try {
+
+      tutorialYaVisto =
+        localStorage.getItem(
+          'burruyacu_tutorial_visto'
+        ) === '1';
+
+    } catch (e) {}
+
+
+    if (!tutorialYaVisto) {
+
+      document
+        .getElementById('tutorial')
+        .classList.add('show');
+
+      try {
+
+        localStorage.setItem(
+          'burruyacu_tutorial_visto',
+          '1'
+        );
+
+      } catch (e) {}
+    }
+
+  } catch (err) {
+
+    console.error(err);
+
+    setStatus(
+      'Error: ' +
+      err.message +
+      ' (revisá que sean GeoTIFF válidos)'
+    );
+  }
+}
+
+
+/* ============================================================
+   BOTÓN MANUAL
+   ============================================================ */
+
+document
+  .getElementById('buildBtn')
+  .addEventListener(
+    'click',
+    () => {
+
+      construirEscena(
+        filesLoaded.dem,
+        filesLoaded.clasif,
+        filesLoaded.clasifHist,
+        null
+      );
+
+    }
+  );
+
+
+/* ============================================================
+   AUTO-CARGA DESDE GITHUB
    ============================================================ */
 
 const DATA_SOURCES = {
@@ -549,463 +1803,263 @@ const DATA_SOURCES = {
 
   anioHist:
     '2018'
-
 };
 
 
-/* ============================================================
-   VARIABLES
-   ============================================================ */
-
-let scene;
-let camera;
-let renderer;
-let controls;
-
-let terrain;
-let geometry;
-let pos;
-
-let n;
-let aspect;
-
-let demArr;
-let clasifLookup;
-
-let selectedClase = null;
-
-let actualBundle;
-let histBundle;
-
-let currentYear = 'actual';
-
-let currentTextureInfo;
-let texture;
-
-let workBuffer;
-
-let raycaster;
-let mouse;
-
-let marker = null;
-
-let comparisonChart = null;
-
-
-/* ============================================================
-   ARCHIVOS
-   ============================================================ */
-
-const filesLoaded = {
-
-  dem: null,
-  clasif: null,
-  clasifHist: null
-
-};
-
-let areasActual = null;
-let areasHist = null;
-
-
-/* ============================================================
-   LEER GEOTIFF
-   ============================================================ */
-
-async function readTiffFull(source) {
-
-  const tiff = await GeoTIFF.fromUrl(source);
-
-  const image = await tiff.getImage();
-
-  const width = image.getWidth();
-  const height = image.getHeight();
-
-  const rasters = await image.readRasters({
-    interleave: true
-  });
-
-  return {
-
-    data: rasters,
-    width,
-    height
-
-  };
-
-}
-
-
-/* ============================================================
-   SAMPLE NEAREST
-   ============================================================ */
-
-function sampleNearest(arr, w, h, x, y) {
-
-  const ix = Math.max(
-    0,
-    Math.min(w - 1, Math.round(x))
-  );
-
-  const iy = Math.max(
-    0,
-    Math.min(h - 1, Math.round(y))
-  );
-
-  return arr[iy * w + ix];
-
-}
-
-
-/* ============================================================
-   SAMPLE BILINEAR
-   ============================================================ */
-
-function sampleBilinear(arr, w, h, x, y) {
-
-  const x0 = Math.floor(x);
-  const y0 = Math.floor(y);
-
-  const x1 = Math.min(w - 1, x0 + 1);
-  const y1 = Math.min(h - 1, y0 + 1);
-
-  const dx = x - x0;
-  const dy = y - y0;
-
-  const a = arr[
-    Math.max(0, y0) * w +
-    Math.max(0, x0)
-  ];
-
-  const b = arr[
-    Math.max(0, y0) * w +
-    x1
-  ];
-
-  const c = arr[
-    y1 * w +
-    Math.max(0, x0)
-  ];
-
-  const d = arr[
-    y1 * w +
-    x1
-  ];
-
-  return (
-    a * (1 - dx) * (1 - dy) +
-    b * dx * (1 - dy) +
-    c * (1 - dx) * dy +
-    d * dx * dy
-  );
-
-}
-
-
-/* ============================================================
-   COLOR HEX → RGB
-   ============================================================ */
-
-function hexToRgb(hex) {
-
-  hex = hex.replace('#', '');
-
-  return {
-
-    r: parseInt(hex.substring(0, 2), 16),
-
-    g: parseInt(hex.substring(2, 4), 16),
-
-    b: parseInt(hex.substring(4, 6), 16)
-
-  };
-
-}
-
-
-/* ============================================================
-   CONSTRUIR TEXTURA
-   ============================================================ */
-
-function buildColorTexture(
-
-  clasifArr,
-  clasifW,
-  clasifH
-
-) {
-
-  const canvas =
-    document.createElement('canvas');
-
-  canvas.width = TEX_SIZE;
-  canvas.height = TEX_SIZE;
-
-  const ctx = canvas.getContext('2d');
-
-  const imageData =
-    ctx.createImageData(
-      TEX_SIZE,
-      TEX_SIZE
-    );
-
-  const data = imageData.data;
-
-  const clasifTex =
-    new Float32Array(
-      TEX_SIZE * TEX_SIZE
-    );
-
-
-  const baseColors =
-    new Uint8ClampedArray(
-      TEX_SIZE * TEX_SIZE * 4
-    );
-
-
-  for (
-    let y = 0;
-    y < TEX_SIZE;
-    y++
-  ) {
-
-    const sy =
-      y / (TEX_SIZE - 1) *
-      (clasifH - 1);
-
-
-    for (
-      let x = 0;
-      x < TEX_SIZE;
-      x++
-    ) {
-
-      const sx =
-        x / (TEX_SIZE - 1) *
-        (clasifW - 1);
-
-
-      const clase =
-        Math.round(
-          sampleNearest(
-            clasifArr,
-            clasifW,
-            clasifH,
-            sx,
-            sy
-          )
-        );
-
-
-      const idx =
-        y * TEX_SIZE + x;
-
-
-      clasifTex[idx] = clase;
-
-
-      const rgb =
-        CLASES[clase]
-          ? hexToRgb(CLASES[clase][1])
-          : {
-              r: 80,
-              g: 80,
-              b: 80
-            };
-
-
-      const p = idx * 4;
-
-
-      data[p] = rgb.r;
-      data[p + 1] = rgb.g;
-      data[p + 2] = rgb.b;
-      data[p + 3] = 255;
-
-
-      baseColors[p] = rgb.r;
-      baseColors[p + 1] = rgb.g;
-      baseColors[p + 2] = rgb.b;
-      baseColors[p + 3] = 255;
-
+async function archivoExiste(url) {
+
+  if (!url) return false;
+
+  try {
+
+    const r =
+      await fetch(
+        url,
+        {
+          method: 'HEAD'
+        }
+      );
+
+    if (!r.ok) {
+
+      console.warn(
+        '[auto-carga] no encontrado:',
+        url,
+        '→ HTTP',
+        r.status
+      );
     }
 
+    return r.ok;
+
+  } catch (e) {
+
+    console.warn(
+      '[auto-carga] error de red:',
+      url,
+      '→',
+      e.message
+    );
+
+    return false;
+  }
+}
+
+
+async function intentarAutoCarga() {
+
+  console.log(
+    '[auto-carga] buscando archivos en:',
+    DATA_SOURCES.dem,
+    'y',
+    DATA_SOURCES.clasif
+  );
+
+
+  const [
+    demOk,
+    clasifOk
+  ] =
+    await Promise.all([
+
+      archivoExiste(
+        DATA_SOURCES.dem
+      ),
+
+      archivoExiste(
+        DATA_SOURCES.clasif
+      )
+    ]);
+
+
+  if (!demOk || !clasifOk) {
+
+    console.warn(
+      '[auto-carga] falta DEM o clasificación'
+    );
+
+    document
+      .getElementById('splash')
+      .classList.add('hidden');
+
+    document
+      .getElementById('dropzone')
+      .classList.remove('hidden');
+
+    return;
   }
 
 
-  ctx.putImageData(
-    imageData,
-    0,
-    0
+  console.log(
+    '[auto-carga] DEM y clasificación encontrados'
   );
 
 
-  const tex =
-    new THREE.CanvasTexture(canvas);
+  if (DATA_SOURCES.areas) {
 
-  tex.minFilter =
-    THREE.NearestFilter;
+    try {
 
-  tex.magFilter =
-    THREE.NearestFilter;
-
-  tex.needsUpdate = true;
-
-
-  /*
-   * Clasificación reducida a la misma grilla
-   * utilizada por el terreno 3D.
-   */
-
-  const lookup =
-    new Float32Array(
-      MESH_GRID * MESH_GRID
-    );
-
-
-  for (
-    let iy = 0;
-    iy < MESH_GRID;
-    iy++
-  ) {
-
-    const sy =
-      iy /
-      (MESH_GRID - 1) *
-      (clasifH - 1);
-
-
-    for (
-      let ix = 0;
-      ix < MESH_GRID;
-      ix++
-    ) {
-
-      const sx =
-        ix /
-        (MESH_GRID - 1) *
-        (clasifW - 1);
-
-
-      lookup[
-        iy * MESH_GRID + ix
-      ] =
-        Math.round(
-          sampleNearest(
-            clasifArr,
-            clasifW,
-            clasifH,
-            sx,
-            sy
+      areasPorClase =
+        await (
+          await fetch(
+            DATA_SOURCES.areas
           )
-        );
+        ).json();
 
+    } catch (e) {
+
+      console.warn(
+        '[auto-carga] no se pudo leer',
+        DATA_SOURCES.areas,
+        e.message
+      );
     }
-
   }
 
 
-  return {
+  let clasifHistSource =
+    null;
 
-    texture: tex,
-    canvas,
-    ctx,
-    baseColors,
-    clasifTex,
-    clasifLookup: lookup
 
-  };
+  if (
+    await archivoExiste(
+      DATA_SOURCES.clasifHist
+    )
+  ) {
 
+    clasifHistSource =
+      DATA_SOURCES.clasifHist;
+
+
+    if (DATA_SOURCES.areasHist) {
+
+      try {
+
+        areasPorClaseHist =
+          await (
+            await fetch(
+              DATA_SOURCES.areasHist
+            )
+          ).json();
+
+      } catch (e) {
+
+        console.warn(
+          '[auto-carga] no se pudo leer',
+          DATA_SOURCES.areasHist,
+          e.message
+        );
+      }
+    }
+  }
+
+
+  construirEscena(
+
+    DATA_SOURCES.dem,
+
+    DATA_SOURCES.clasif,
+
+    clasifHistSource,
+
+    DATA_SOURCES.anioHist
+  );
 }
 
 
+intentarAutoCarga();
+
+
 /* ============================================================
-   CONSTRUIR ESCENA
+   ESCENA 3D
    ============================================================ */
 
 function buildScene(
 
-  dem,
-  clasif,
+  demArr,
 
-  textureInfo,
+  clasifLookup,
+
+  texture,
+
+  n,
+
+  aspect,
+
+  texInfo,
 
   histBundleIn
 
 ) {
 
-  n = MESH_GRID;
-
-  aspect =
-    dem.width / dem.height;
+  let min = Infinity;
+  let max = -Infinity;
 
 
-  demArr = dem.data;
+  for (
+    let i = 0;
+    i < demArr.length;
+    i++
+  ) {
 
-  clasifLookup =
-    textureInfo.clasifLookup;
+    const v =
+      demArr[i];
 
+    if (
+      v > -1000 &&
+      v < 9000
+    ) {
 
-  currentTextureInfo =
-    textureInfo;
-
-  texture =
-    textureInfo.texture;
-
-
-  workBuffer =
-    new Uint8ClampedArray(
-      textureInfo.baseColors
-    );
-
-
-  /* ==========================================================
-     ESCENA
-     ========================================================== */
-
-  scene =
-    new THREE.Scene();
-
-  scene.background =
-    new THREE.Color(0x101318);
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+  }
 
 
-  /* ==========================================================
-     TERRENO
-     ========================================================== */
+  const range =
+    (max - min) || 1;
 
-  geometry =
+
+  const planeW = 200;
+  const planeH = 200 * aspect;
+
+
+  const geometry =
     new THREE.PlaneGeometry(
 
-      200,
-
-      200 * aspect,
+      planeW,
+      planeH,
 
       n - 1,
-
       n - 1
-
     );
 
 
-  geometry.rotateX(-Math.PI / 2);
+  geometry.rotateX(
+    -Math.PI / 2
+  );
 
 
-  pos =
+  const pos =
     geometry.attributes.position;
 
 
   const heights =
     new Float32Array(
-      n * n
+      pos.count
     );
 
 
-  let min =
-    Infinity;
+  const normArr =
+    new Float32Array(
+      pos.count
+    );
 
-  let max =
-    -Infinity;
+
+  const BASE_Z_SCALE = 28;
+
+  let zScale =
+    BASE_Z_SCALE;
 
 
   for (
@@ -1014,71 +2068,43 @@ function buildScene(
     iy++
   ) {
 
-    const sy =
-      iy /
-      (n - 1) *
-      (dem.height - 1);
-
-
     for (
       let ix = 0;
       ix < n;
       ix++
     ) {
 
-      const sx =
-        ix /
-        (n - 1) *
-        (dem.width - 1);
-
-
-      const h =
-        sampleBilinear(
-          dem.data,
-          dem.width,
-          dem.height,
-          sx,
-          sy
-        );
-
-
       const idx =
         iy * n + ix;
 
-
-      heights[idx] = h;
-
-
-      if (h < min) min = h;
-      if (h > max) max = h;
-
-    }
-
-  }
+      let h =
+        demArr[idx];
 
 
-  const BASE_Z_SCALE = 28;
+      if (
+        !(h > -1000 && h < 9000)
+      ) {
+        h = min;
+      }
 
 
-  for (
-    let i = 0;
-    i < n * n;
-    i++
-  ) {
+      const norm =
+        (h - min) /
+        range;
 
-    const normalized =
-      (heights[i] - min) /
-      Math.max(
-        0.0001,
-        max - min
+
+      pos.setY(
+        idx,
+        norm * zScale
       );
 
 
-    pos.setY(
-      i,
-      normalized * BASE_Z_SCALE
-    );
+      heights[idx] =
+        h;
 
+      normArr[idx] =
+        norm;
+    }
   }
 
 
@@ -1090,441 +2116,290 @@ function buildScene(
 
       map: texture,
 
-      roughness: 1,
+      roughness: 0.9,
 
-      metalness: 0
-
+      metalness: 0.02
     });
 
 
-  terrain =
+  const terrain =
     new THREE.Mesh(
       geometry,
       material
     );
 
 
-  scene.add(terrain);
+  const scene =
+    new THREE.Scene();
 
 
-  /* ==========================================================
-     LUCES
-     ========================================================== */
+  scene.background =
+    new THREE.Color(
+      0x0e1116
+    );
 
-  const ambient =
+
+  scene.add(
+    terrain
+  );
+
+
+  scene.add(
     new THREE.AmbientLight(
       0xffffff,
-      1.2
-    );
-
-  scene.add(ambient);
-
-
-  const directional =
-    new THREE.DirectionalLight(
-      0xffffff,
-      1.3
-    );
-
-  directional.position.set(
-    100,
-    150,
-    100
-  );
-
-  scene.add(directional);
-
-
-  /* ==========================================================
-     CÁMARA
-     ========================================================== */
-
-  camera =
-    new THREE.PerspectiveCamera(
-      45,
-      window.innerWidth /
-      window.innerHeight,
-      0.1,
-      2000
-    );
-
-
-  camera.position.set(
-    0,
-    170,
-    180
-  );
-
-
-  camera.lookAt(
-    0,
-    0,
-    0
-  );
-
-
-  /* ==========================================================
-     RENDERER
-     ========================================================== */
-
-  renderer =
-    new THREE.WebGLRenderer({
-
-      antialias: true
-
-    });
-
-
-  renderer.setPixelRatio(
-    Math.min(
-      window.devicePixelRatio,
-      2
+      0.55
     )
   );
 
 
-  renderer.setSize(
-    window.innerWidth,
-    window.innerHeight
+  scene.add(
+    new THREE.HemisphereLight(
+      0xffffff,
+      0x30261c,
+      0.12
+    )
   );
 
 
-  document
-    .getElementById('app')
-    .appendChild(renderer.domElement);
-
-
-  /* ==========================================================
-     CONTROLES
-     ========================================================== */
-
-  controls =
-    new THREE.OrbitControls(
-      camera,
-      renderer.domElement
+  const sun =
+    new THREE.DirectionalLight(
+      0xffffff,
+      0.32
     );
 
 
-  controls.enableDamping = true;
-
-  controls.dampingFactor = .06;
-
-  controls.minDistance = 30;
-
-  controls.maxDistance = 500;
+  sun.position.set(
+    120,
+    160,
+    80
+  );
 
 
-  /* ==========================================================
-     RAYCASTER
-     ========================================================== */
-
-  raycaster =
-    new THREE.Raycaster();
-
-  mouse =
-    new THREE.Vector2();
-
-
-  /* ==========================================================
-     BUNDLES
-     ========================================================== */
-
-  actualBundle = {
-
-    clasifLookup:
-      textureInfo.clasifLookup,
-
-    textureInfo:
-      textureInfo
-
-  };
-
-
-  histBundle =
-    histBundleIn;
-
-
-  /* ==========================================================
-     ==========================================================
-     ÍCONOS DE CULTIVOS
-     ==========================================================
-     ==========================================================
-
-     CLASE 1 = CAÑA
-     CLASE 3 = MAÍZ
-
-     Cada sprite usa exactamente el mismo índice "idx"
-     que utiliza la clasificación del terreno.
-     ========================================================== */
-
-
-  const cultivosIconos = {
-
-    1: {
-      nombre: 'Caña de azúcar',
-      archivo: 'data/cana.png'
-    },
-
-    3: {
-      nombre: 'Maíz',
-      archivo: 'data/maiz.png'
-    }
-
-  };
-
-
-  const iconosGroups = {};
-
-  const iconosTextures = {};
-
-  const iconosMaterials = {};
+  scene.add(sun);
 
 
   /*
-   * Creamos un grupo independiente para cada cultivo.
+   * ==========================================================
+   * GRUPO DE ÍCONOS DE CAÑA
+   * ==========================================================
    */
 
-  Object.keys(
-    cultivosIconos
-  ).forEach(claseString => {
-
-    const clase =
-      Number(claseString);
+  const canaGroup =
+    new THREE.Group();
 
 
-    iconosGroups[clase] =
-      new THREE.Group();
+  canaGroup.name =
+    'Iconos_Cana';
 
 
-    iconosGroups[clase].visible =
-      false;
+  canaGroup.visible =
+    false;
 
 
-    scene.add(
-      iconosGroups[clase]
-    );
+  scene.add(
+    canaGroup
+  );
 
 
-    const loader =
-      new THREE.TextureLoader();
+  /*
+   * Material compartido por todos los sprites.
+   * Esto evita crear cientos de materiales diferentes.
+   */
+
+  let canaMaterial =
+    null;
 
 
-    loader.load(
+  /*
+   * Esta función elimina los íconos anteriores.
+   */
 
-      cultivosIconos[clase].archivo,
-
-      textureLoaded => {
-
-        iconosTextures[clase] =
-          textureLoaded;
-
-
-        iconosMaterials[clase] =
-          new THREE.SpriteMaterial({
-
-            map: textureLoaded,
-
-            transparent: true,
-
-            depthTest: true,
-
-            depthWrite: false
-
-          });
-
-
-        console.log(
-          '[icono] Cargado:',
-          cultivosIconos[clase].nombre
-        );
-
-
-        /*
-         * Si el usuario ya tenía seleccionada
-         * esa clase cuando terminó de cargar
-         * la imagen, la mostramos.
-         */
-
-        if (
-          selectedClase === clase
-        ) {
-
-          crearIconosCultivo(
-            clase,
-            clasifLookup
-          );
-
-        }
-
-      },
-
-      undefined,
-
-      error => {
-
-        console.warn(
-          '[icono] No se pudo cargar:',
-          cultivosIconos[clase].archivo,
-          error
-        );
-
-      }
-
-    );
-
-  });
-
-
-  /* ==========================================================
-     LIMPIAR ÍCONOS
-     ========================================================== */
-
-  function limpiarIconosCultivo(
-    clase
-  ) {
-
-    const group =
-      iconosGroups[clase];
-
-
-    if (!group) return;
-
+  function limpiarIconosCana() {
 
     while (
-      group.children.length > 0
+      canaGroup.children.length > 0
     ) {
 
-      group.remove(
-        group.children[0]
+      const child =
+        canaGroup.children.pop();
+
+      canaGroup.remove(
+        child
       );
-
     }
-
   }
 
 
-  /* ==========================================================
-     CREAR ÍCONOS
-     ========================================================== */
+  /*
+   * Actualiza la altura de los íconos cuando
+   * cambia la exageración del relieve.
+   */
 
-  function crearIconosCultivo(
+  function actualizarAlturaIconos() {
 
-    clase,
+    for (
+      let i = 0;
+      i < canaGroup.children.length;
+      i++
+    ) {
 
-    clasif
+      const sprite =
+        canaGroup.children[i];
 
-  ) {
+      const idx =
+        sprite.userData.gridIndex;
 
-    const group =
-      iconosGroups[clase];
-
-
-    const material =
-      iconosMaterials[clase];
+      if (
+        idx === undefined
+      ) continue;
 
 
-    const texture =
-      iconosTextures[clase];
+      sprite.position.y =
+        pos.getY(idx) + 1.2;
+    }
+  }
+
+
+  /*
+   * Crea los íconos solamente sobre las posiciones
+   * donde la clasificación dice que existe CAÑA (clase 1).
+   */
+
+  function crearIconosCana() {
+
+    if (!canaTextureGlobal) {
+
+      cargarIconoCana(() => {
+
+        /*
+         * Una vez cargada la imagen,
+         * volvemos a crear los íconos solamente
+         * si el usuario sigue teniendo seleccionada
+         * la clase 1.
+         */
+
+        if (selectedClase === 1) {
+          crearIconosCana();
+        }
+
+      });
+
+      return;
+    }
+
+
+    limpiarIconosCana();
+
+
+    /*
+     * Contamos primero cuántos puntos de caña hay
+     * en la malla.
+     */
+
+    let totalCana =
+      0;
+
+
+    for (
+      let i = 0;
+      i < clasifLookup.length;
+      i++
+    ) {
+
+      if (
+        Math.round(
+          clasifLookup[i]
+        ) === 1
+      ) {
+        totalCana++;
+      }
+    }
 
 
     if (
-      !group ||
-      !material ||
-      !texture ||
-      !clasif
+      totalCana === 0
     ) {
 
+      canaGroup.visible =
+        false;
+
       return;
-
     }
 
 
-    limpiarIconosCultivo(
-      clase
-    );
-
-
     /*
-     * No colocamos un sprite en absolutamente
-     * cada vértice porque podría generar miles
-     * de objetos.
+     * Calculamos el espaciamiento automáticamente.
      *
-     * En cambio recorremos la grilla cada N
-     * píxeles.
+     * Si hay pocas zonas de caña:
+     * → más íconos.
      *
-     * PERO cada sprite sigue utilizando
-     * exactamente el idx del píxel seleccionado.
+     * Si hay muchísimas:
+     * → menos íconos para mantener fluidez.
      */
 
-    let step = 5;
-
-
-    function contarPuntos() {
-
-      let cantidad = 0;
-
-
-      for (
-        let iy = 0;
-        iy < n;
-        iy += step
-      ) {
-
-        for (
-          let ix = 0;
-          ix < n;
-          ix += step
-        ) {
-
-          const idx =
-            iy * n + ix;
-
-
-          if (
-            Math.round(
-              clasif[idx]
-            ) === clase
-          ) {
-
-            cantidad++;
-
-          }
-
-        }
-
-      }
-
-
-      return cantidad;
-
-    }
-
-
-    let cantidad =
-      contarPuntos();
-
-
-    /*
-     * Evitamos una cantidad excesiva
-     * de sprites.
-     */
+    let step = 2;
 
     while (
-      cantidad > 700 &&
-      step < 15
+      Math.ceil(n / step) *
+      Math.ceil(n / step) >
+      MAX_CANA_ICONS * 1.8
     ) {
 
       step++;
-
-      cantidad =
-        contarPuntos();
-
     }
 
 
-    /* ========================================================
-       CREAR CADA SPRITE
-       ======================================================== */
+    /*
+     * Material compartido.
+     */
+
+    if (!canaMaterial) {
+
+      canaMaterial =
+        new THREE.SpriteMaterial({
+
+          map:
+            canaTextureGlobal,
+
+          transparent: true,
+
+          depthTest: true,
+
+          depthWrite: false,
+
+          opacity: 0.96
+        });
+    }
+
+
+    /*
+     * Aspect ratio de la imagen.
+     * Así no deformamos el PNG.
+     */
+
+    const image =
+      canaTextureGlobal.image;
+
+
+    let aspectIcon =
+      1;
+
+
+    if (
+      image &&
+      image.width &&
+      image.height
+    ) {
+
+      aspectIcon =
+        image.width /
+        image.height;
+    }
+
+
+    /*
+     * Recorremos la malla.
+     */
 
     for (
       let iy = 0;
@@ -1542,99 +2417,50 @@ function buildScene(
           iy * n + ix;
 
 
+        const clase =
+          Math.round(
+            clasifLookup[idx]
+          );
+
+
         /*
-         * ESTE ES EL PUNTO MÁS IMPORTANTE:
-         *
-         * El ícono solamente se crea si
-         * el mismo píxel del raster tiene
-         * la clase correspondiente.
+         * Solo clase 1:
+         * Caña de azúcar.
          */
 
-        if (
-          Math.round(
-            clasif[idx]
-          ) !== clase
-        ) {
-
+        if (clase !== 1) {
           continue;
-
         }
 
 
         const sprite =
           new THREE.Sprite(
-            material
+            canaMaterial
           );
 
 
         /*
-         * Guardamos el índice exacto
-         * del píxel.
-         */
-
-        sprite.userData.idx =
-          idx;
-
-
-        sprite.userData.clase =
-          clase;
-
-
-        /*
-         * Posición EXACTA del mismo vértice
-         * utilizado por el terreno.
+         * Usamos directamente la posición
+         * del vértice de la malla.
+         *
+         * Esto hace que el ícono quede exactamente
+         * sobre el terreno correspondiente.
          */
 
         sprite.position.set(
 
           pos.getX(idx),
 
-          pos.getY(idx) + 1.5,
+          pos.getY(idx) + 1.2,
 
           pos.getZ(idx)
-
-        );
-
-
-        /* ====================================================
-           TAMAÑO
-           ==================================================== */
-
-        const img =
-          texture.image;
-
-
-        const aspectIcon =
-
-          img &&
-          img.width &&
-          img.height
-
-            ? img.width /
-              img.height
-
-            : 1;
-
-
-        const altura =
-          5.5;
-
-
-        sprite.scale.set(
-
-          altura *
-          aspectIcon,
-
-          altura,
-
-          1
-
         );
 
 
         /*
-         * El centro inferior del sprite
-         * queda apoyado sobre el terreno.
+         * El centro vertical se coloca abajo,
+         * para que la "base" de la imagen toque
+         * visualmente el terreno.
          */
 
         sprite.center.set(
@@ -1643,198 +2469,1973 @@ function buildScene(
         );
 
 
-        group.add(
-          sprite
+        /*
+         * Mantener proporción original del PNG.
+         */
+
+        sprite.scale.set(
+
+          CANA_ICON_SIZE * aspectIcon,
+
+          CANA_ICON_SIZE,
+
+          1
         );
 
-      }
 
+        /*
+         * Guardamos el índice de la malla.
+         * Sirve para actualizar la altura cuando
+         * el usuario cambia el relieve.
+         */
+
+        sprite.userData.gridIndex =
+          idx;
+
+
+        canaGroup.add(
+          sprite
+        );
+      }
     }
 
 
-    group.visible =
-      selectedClase === clase;
+    canaGroup.visible =
+      true;
 
 
     console.log(
-
-      '[icono]',
-      cultivosIconos[clase].nombre,
-      ':',
-      group.children.length,
-      'íconos'
-
+      '🌱 Íconos de caña:',
+      canaGroup.children.length,
+      '| espaciamiento:',
+      step
     );
-
   }
 
 
-  /* ==========================================================
-     ACTUALIZAR ALTURA DE LOS ÍCONOS
-     ========================================================== */
+  /*
+   * ==========================================================
+   * CÁMARA
+   * ==========================================================
+   */
 
-  function actualizarAlturaIconosCultivo(
-    clase
-  ) {
-
-    const group =
-      iconosGroups[clase];
-
-
-    if (!group) return;
-
-
-    group.children.forEach(
-      sprite => {
-
-        const idx =
-          sprite.userData.idx;
-
-
-        sprite.position.y =
-          pos.getY(idx) + 1.5;
-
-      }
+  const wrap =
+    document.getElementById(
+      'canvas-wrap'
     );
 
-  }
+
+  const camera =
+    new THREE.PerspectiveCamera(
+
+      45,
+
+      window.innerWidth /
+      window.innerHeight,
+
+      0.1,
+
+      2000
+    );
 
 
-  /* ==========================================================
-     ACTUALIZAR TODOS LOS ÍCONOS
-     ========================================================== */
+  camera.position.set(
+    0,
+    130,
+    220
+  );
 
-  function actualizarAlturaTodosLosIconos() {
 
-    Object.keys(
-      iconosGroups
-    ).forEach(clase => {
+  const renderer =
+    new THREE.WebGLRenderer({
 
-      actualizarAlturaIconosCultivo(
-        Number(clase)
-      );
-
+      antialias: true
     });
 
+
+  renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+  );
+
+
+  renderer.setPixelRatio(
+    Math.min(
+      window.devicePixelRatio,
+      2
+    )
+  );
+
+
+  wrap.innerHTML = '';
+
+  wrap.appendChild(
+    renderer.domElement
+  );
+
+
+  const controls =
+    new THREE.OrbitControls(
+
+      camera,
+
+      renderer.domElement
+    );
+
+
+  controls.enableDamping =
+    true;
+
+
+  controls.dampingFactor =
+    0.08;
+
+
+  controls.maxPolarAngle =
+    Math.PI / 2.05;
+
+
+  const raycaster =
+    new THREE.Raycaster();
+
+
+  const mouse =
+    new THREE.Vector2();
+
+
+  const infoBox =
+    document.getElementById(
+      'info'
+    );
+
+
+  const tooltip =
+    document.getElementById(
+      'tooltip'
+    );
+
+
+  const cropListEl =
+    document.getElementById(
+      'cropList'
+    );
+
+
+  const yearToggleEl =
+    document.getElementById(
+      'yearToggle'
+    );
+
+
+  const compareToggleBtnEl =
+    document.getElementById(
+      'compareToggleBtn'
+    );
+
+
+  const comparePanelEl =
+    document.getElementById(
+      'comparePanel'
+    );
+
+
+  /* ==========================================================
+     AÑOS
+     ========================================================== */
+
+  const actualBundle = {
+
+    clasifLookup,
+
+    texture,
+
+    texInfo,
+
+    anio: 'Actual'
+  };
+
+
+  const histBundle =
+    histBundleIn;
+
+
+  let anioActivo =
+    'actual';
+
+
+  function areasActivas() {
+
+    return anioActivo === 'hist'
+      ? areasPorClaseHist
+      : areasPorClase;
   }
 
 
   /* ==========================================================
-     EXPONEMOS LAS FUNCIONES PARA USARLAS DESDE OTRAS PARTES
+     COMPARACIÓN
      ========================================================== */
 
-  window._cultivosIconos = {
+  function setupCompareToggle() {
 
-    groups:
-      iconosGroups,
+    if (!histBundle) {
 
-    textures:
-      iconosTextures,
+      compareToggleBtnEl
+        .classList
+        .remove('show');
 
-    materials:
-      iconosMaterials,
+      comparePanelEl
+        .classList
+        .remove('show');
 
-    crear:
-      crearIconosCultivo,
+      return;
+    }
 
-    actualizarAltura:
-      actualizarAlturaTodosLosIconos
 
-  };
+    compareToggleBtnEl
+      .classList
+      .add('show');
+
+
+    compareToggleBtnEl.textContent =
+      `📊 Comparar ${histBundle.anio} vs ${actualBundle.anio}`;
+
+
+    compareToggleBtnEl.onclick = () => {
+
+      const abierto =
+        comparePanelEl
+          .classList
+          .toggle('show');
+
+
+      if (abierto) {
+        buildComparePanel();
+      }
+    };
+  }
+
+
+  let donutA = null;
+  let donutB = null;
+
+
+  function destruirDonuts() {
+
+    if (donutA) {
+
+      donutA.destroy();
+      donutA = null;
+    }
+
+
+    if (donutB) {
+
+      donutB.destroy();
+      donutB = null;
+    }
+  }
+
+
+  function datosDonut(areas) {
+
+    const labels = [];
+    const data = [];
+    const colors = [];
+
+
+    Object.keys(CLASES)
+      .forEach(k => {
+
+        const clase =
+          Number(k);
+
+        const valor =
+          Number(
+            (
+              areas &&
+              areas[String(clase)]
+            ) || 0
+          );
+
+
+        if (valor <= 0) {
+          return;
+        }
+
+
+        const [
+          nombre,
+          color
+        ] =
+          CLASES[clase];
+
+
+        labels.push(nombre);
+        data.push(valor);
+        colors.push(color);
+
+      });
+
+
+    return {
+      labels,
+      data,
+      colors
+    };
+  }
+
+
+  function crearDonut(
+    canvasId,
+    areas
+  ) {
+
+    const {
+      labels,
+      data,
+      colors
+    } =
+      datosDonut(areas);
+
+
+    const ctx2d =
+      document
+        .getElementById(canvasId)
+        .getContext('2d');
+
+
+    return new Chart(
+      ctx2d,
+      {
+
+        type: 'doughnut',
+
+        data: {
+
+          labels,
+
+          datasets: [{
+
+            data,
+
+            backgroundColor:
+              colors,
+
+            borderColor:
+              '#0e1116',
+
+            borderWidth: 1
+          }]
+        },
+
+        options: {
+
+          responsive: true,
+
+          cutout: '58%',
+
+          plugins: {
+
+            legend: {
+              display: false
+            },
+
+            tooltip: {
+
+              callbacks: {
+
+                label:
+                  (item) =>
+                    `${item.label}: ${formatHa(item.raw)}`
+              }
+            }
+          }
+        }
+      }
+    );
+  }
+
+
+  function buildComparePanel() {
+
+    destruirDonuts();
+
+
+    if (
+      !areasPorClase ||
+      !areasPorClaseHist
+    ) {
+
+      comparePanelEl.innerHTML =
+        `<div style="color:var(--muted)">
+          Para esta comparación hacen falta los dos archivos de superficie
+          (el actual y el de ${histBundle.anio}).
+          Arrastralos en la pantalla inicial y volvé a construir el terreno.
+        </div>`;
+
+      return;
+    }
+
+
+    const anioA =
+      histBundle.anio;
+
+    const anioB =
+      actualBundle.anio;
+
+
+    const totalA =
+      Object.values(
+        areasPorClaseHist
+      )
+      .reduce(
+        (a, b) =>
+          a + Number(b),
+        0
+      );
+
+
+    const totalB =
+      Object.values(
+        areasPorClase
+      )
+      .reduce(
+        (a, b) =>
+          a + Number(b),
+        0
+      );
+
+
+    const deltaTotalPct =
+      totalA
+        ? (
+            (totalB - totalA) /
+            totalA *
+            100
+          )
+        : null;
+
+
+    const colorDelta =
+      (d) =>
+        d >= 0
+          ? '#3ddc84'
+          : '#ff6b6b';
+
+
+    let html =
+      `<div class="cmp-total">
+        Superficie agrícola clasificada
+      </div>
+
+      <div class="cmp-total-sub">
+        ${formatHa(totalA)}
+        (${anioA})
+        →
+        ${formatHa(totalB)}
+        (${anioB})
+
+        ${
+          deltaTotalPct !== null
+            ? ` · <b style="color:${colorDelta(deltaTotalPct)}">
+                ${deltaTotalPct >= 0 ? '+' : ''}
+                ${deltaTotalPct.toFixed(1).replace('.', ',')}%
+              </b>`
+            : ''
+        }
+      </div>`;
+
+
+    html += `
+      <div class="cmp-donuts cmp-donuts-top">
+
+        <div class="cmp-donut-box">
+          <div class="cmp-donut-title">
+            ${anioA}
+          </div>
+
+          <canvas
+            id="donutCanvasA"
+            width="120"
+            height="120">
+          </canvas>
+        </div>
+
+        <div class="cmp-donut-box">
+
+          <div class="cmp-donut-title">
+            ${anioB}
+          </div>
+
+          <canvas
+            id="donutCanvasB"
+            width="120"
+            height="120">
+          </canvas>
+
+        </div>
+
+      </div>`;
+
+
+    Object.keys(CLASES)
+      .forEach(k => {
+
+        const clase =
+          Number(k);
+
+        const [
+          nombre,
+          color
+        ] =
+          CLASES[clase];
+
+
+        const a =
+          Number(
+            areasPorClaseHist[
+              String(clase)
+            ] || 0
+          );
+
+
+        const b =
+          Number(
+            areasPorClase[
+              String(clase)
+            ] || 0
+          );
+
+
+        if (
+          a === 0 &&
+          b === 0
+        ) {
+          return;
+        }
+
+
+        const max =
+          Math.max(
+            a,
+            b,
+            1
+          );
+
+
+        const delta =
+          b - a;
+
+
+        const deltaPct =
+          a
+            ? (delta / a * 100)
+            : null;
+
+
+        html += `
+
+          <div class="cmp-row">
+
+            <div class="cmp-row-top">
+
+              <span class="cmp-name">
+
+                <span
+                  class="sw"
+                  style="background:${color}">
+                </span>
+
+                ${nombre}
+
+              </span>
+
+              <span
+                class="cmp-delta"
+                style="color:${colorDelta(delta)}"
+              >
+                ${delta >= 0 ? '+' : ''}
+                ${formatHa(delta)}
+                ${
+                  deltaPct !== null
+                    ? ` (${delta >= 0 ? '+' : ''}
+                       ${deltaPct.toFixed(0)}%)`
+                    : ''
+                }
+              </span>
+
+            </div>
+
+
+            <div class="cmp-bar-line">
+
+              <span class="cmp-bar-year">
+                ${anioA}
+              </span>
+
+              <div class="cmp-bar-track">
+
+                <div
+                  class="cmp-bar-fill"
+                  style="
+                    width:${a / max * 100}%;
+                    background:${color};
+                    opacity:0.5
+                  ">
+                </div>
+
+              </div>
+
+              <span class="cmp-bar-value">
+                ${formatHa(a)}
+              </span>
+
+            </div>
+
+
+            <div class="cmp-bar-line">
+
+              <span class="cmp-bar-year">
+                ${anioB}
+              </span>
+
+              <div class="cmp-bar-track">
+
+                <div
+                  class="cmp-bar-fill"
+                  style="
+                    width:${b / max * 100}%;
+                    background:${color}
+                  ">
+                </div>
+
+              </div>
+
+              <span class="cmp-bar-value">
+                ${formatHa(b)}
+              </span>
+
+            </div>
+
+          </div>`;
+      });
+
+
+    comparePanelEl.innerHTML =
+      html;
+
+
+    donutA =
+      crearDonut(
+        'donutCanvasA',
+        areasPorClaseHist
+      );
+
+
+    donutB =
+      crearDonut(
+        'donutCanvasB',
+        areasPorClase
+      );
+  }
+
+
+  /* ==========================================================
+     SELECTOR DE AÑO
+     ========================================================== */
+
+  function buildYearToggle() {
+
+    if (!histBundle) {
+
+      yearToggleEl.style.display =
+        'none';
+
+      return;
+    }
+
+
+    yearToggleEl.style.display =
+      'flex';
+
+
+    yearToggleEl.innerHTML = `
+
+      <button
+        class="year-btn ${
+          anioActivo === 'actual'
+            ? 'active'
+            : ''
+        }"
+        data-year="actual"
+      >
+        ${actualBundle.anio}
+      </button>
+
+      <button
+        class="year-btn ${
+          anioActivo === 'hist'
+            ? 'active'
+            : ''
+        }"
+        data-year="hist"
+      >
+        ${histBundle.anio}
+      </button>
+    `;
+
+
+    yearToggleEl
+      .querySelectorAll('.year-btn')
+      .forEach(btn => {
+
+        btn.addEventListener(
+          'click',
+          () =>
+            activarAnio(
+              btn.dataset.year
+            )
+        );
+
+      });
+  }
+
+
+  /* ==========================================================
+     CAMBIO DE AÑO
+     ========================================================== */
+
+  function activarAnio(cual) {
+
+    if (
+      cual === anioActivo
+    ) {
+      return;
+    }
+
+
+    anioActivo =
+      cual;
+
+
+    const b =
+      cual === 'hist'
+        ? histBundle
+        : actualBundle;
+
+
+    clasifLookup =
+      b.clasifLookup;
+
+
+    texInfo =
+      b.texInfo;
+
+
+    texture =
+      b.texture;
+
+
+    terrain.material.map =
+      texture;
+
+
+    terrain.material.needsUpdate =
+      true;
+
+
+    buildYearToggle();
+
+    buildCropSidebar();
+
+
+    /*
+     * Esto es importante:
+     *
+     * setHighlight() vuelve a crear
+     * los íconos usando la clasificación
+     * correspondiente al año elegido.
+     */
+
+    setHighlight(
+      selectedClase
+    );
+
+
+    if (marcador) {
+
+      scene.remove(
+        marcador
+      );
+
+      marcador = null;
+    }
+
+
+    if (
+      selectedClase !== null
+    ) {
+
+      renderCard(
+        selectedClase
+      );
+    }
+  }
+
+
+  /* ==========================================================
+     RESALTADO
+     ========================================================== */
+
+  let selectedClase =
+    null;
+
+
+  const workBuffer =
+    new Uint8ClampedArray(
+      texInfo.baseColors.length
+    );
+
+
+  function setHighlight(clase) {
+
+    const base =
+      texInfo.baseColors;
+
+
+    const clasifTex =
+      texInfo.clasifTex;
+
+
+    if (clase === null) {
+
+      workBuffer.set(
+        base
+      );
+
+    } else {
+
+      for (
+        let i = 0, p = 0;
+        i < clasifTex.length;
+        i++, p += 4
+      ) {
+
+        if (
+          Math.round(
+            clasifTex[i]
+          ) === clase
+        ) {
+
+          workBuffer[p] =
+            base[p];
+
+          workBuffer[p + 1] =
+            base[p + 1];
+
+          workBuffer[p + 2] =
+            base[p + 2];
+
+          workBuffer[p + 3] =
+            255;
+
+        } else {
+
+          const gris =
+            (
+              0.299 * base[p] +
+              0.587 * base[p + 1] +
+              0.114 * base[p + 2]
+            ) * 0.35;
+
+
+          workBuffer[p] =
+            gris;
+
+          workBuffer[p + 1] =
+            gris;
+
+          workBuffer[p + 2] =
+            gris;
+
+          workBuffer[p + 3] =
+            255;
+        }
+      }
+    }
+
+
+    texInfo.ctx.putImageData(
+
+      new ImageData(
+        workBuffer,
+        TEX_SIZE,
+        TEX_SIZE
+      ),
+
+      0,
+      0
+    );
+
+
+    texture.needsUpdate =
+      true;
+
+
+    /*
+     * ========================================================
+     * ÍCONOS DE CAÑA
+     * ========================================================
+     *
+     * Solo aparecen cuando la clase seleccionada
+     * es exactamente la clase 1.
+     */
+
+    if (
+      clase === 1
+    ) {
+
+      crearIconosCana();
+
+    } else {
+
+      canaGroup.visible =
+        false;
+    }
+  }
+
+
+  /* ==========================================================
+     SUPERFICIE TOTAL
+     ========================================================== */
+
+  function areaTotal() {
+
+    const areas =
+      areasActivas();
+
+
+    if (!areas) {
+      return null;
+    }
+
+
+    return Object.values(
+      areas
+    )
+    .reduce(
+      (a, b) =>
+        a + Number(b),
+      0
+    );
+  }
+
+
+  /* ==========================================================
+     TARJETA DE INFORMACIÓN
+     ========================================================== */
+
+  function renderCard(
+    clase,
+    elevM
+  ) {
+
+    const info =
+      CLASES[clase];
+
+
+    if (!info) {
+
+      infoBox
+        .classList
+        .remove('show');
+
+      return;
+    }
+
+
+    const [
+      nombre,
+      color
+    ] =
+      info;
+
+
+    const areas =
+      areasActivas();
+
+
+    const areaHa =
+      areas
+        ? areas[
+            String(clase)
+          ]
+        : undefined;
+
+
+    const total =
+      areaTotal();
+
+
+    const pct =
+      (
+        areaHa !== undefined &&
+        total
+      )
+        ? (
+            Number(areaHa) /
+            total *
+            100
+          )
+        : null;
+
+
+    const etiquetaAnio =
+      histBundle
+
+        ? ` <span
+             style="
+               font-weight:400;
+               font-size:0.68rem;
+               color:var(--muted)
+             "
+           >
+             · ${
+               anioActivo === 'hist'
+                 ? histBundle.anio
+                 : actualBundle.anio
+             }
+           </span>`
+
+        : '';
+
+
+    let html = `
+
+      <div
+        class="info-title"
+        style="color:${color}"
+      >
+        ${nombre}
+        ${etiquetaAnio}
+      </div>
+
+      <div class="info-stats">
+    `;
+
+
+    html += `
+
+      <div class="stat">
+
+        <span class="stat-label">
+          Superficie
+        </span>
+
+        <span class="stat-value">
+
+          ${
+            areaHa !== undefined
+
+              ? formatHa(areaHa)
+
+              : '<span style="opacity:.6;font-weight:400">cargá el JSON</span>'
+          }
+
+        </span>
+
+      </div>
+    `;
+
+
+    if (pct !== null) {
+
+      html += `
+
+        <div class="stat">
+
+          <span class="stat-label">
+            Participación
+          </span>
+
+          <span class="stat-value">
+            ${pct.toFixed(1).replace('.', ',')} %
+          </span>
+
+        </div>
+      `;
+    }
+
+
+    if (
+      elevM !== undefined
+    ) {
+
+      html += `
+
+        <div class="stat">
+
+          <span class="stat-label">
+            Elevación del punto
+          </span>
+
+          <span class="stat-value">
+            ${elevM.toFixed(0)} m
+          </span>
+
+        </div>
+      `;
+    }
+
+
+    html +=
+      `</div>`;
+
+
+    infoBox.innerHTML =
+      html;
+
+
+    infoBox.classList.add(
+      'show'
+    );
+  }
+
+
+  /* ==========================================================
+     SIDEBAR ACTIVA
+     ========================================================== */
+
+  function updateSidebarActive() {
+
+    cropListEl
+      .querySelectorAll(
+        '.crop-row'
+      )
+      .forEach(el => {
+
+        const esTodos =
+          el.dataset.clase === 'all';
+
+
+        el.classList.toggle(
+
+          'active',
+
+          esTodos
+            ? selectedClase === null
+            : Number(
+                el.dataset.clase
+              ) === selectedClase
+
+        );
+      });
+  }
+
+
+  /* ==========================================================
+     SELECCIONAR CULTIVO
+     ========================================================== */
+
+  function selectClase(
+    clase,
+    elevM
+  ) {
+
+    if (
+      selectedClase === clase &&
+      elevM === undefined
+    ) {
+
+      selectedClase =
+        null;
+
+    } else {
+
+      selectedClase =
+        clase;
+    }
+
+
+    setHighlight(
+      selectedClase
+    );
+
+
+    updateSidebarActive();
+
+
+    if (
+      selectedClase === null
+    ) {
+
+      infoBox
+        .classList
+        .remove('show');
+
+    } else {
+
+      renderCard(
+        selectedClase,
+        elevM
+      );
+    }
+  }
 
 
   /* ==========================================================
      SIDEBAR
      ========================================================== */
 
+  function buildCropSidebar() {
+
+    cropListEl.innerHTML =
+      '';
+
+
+    const rowAll =
+      document.createElement(
+        'div'
+      );
+
+
+    rowAll.className =
+      'crop-row crop-row-all';
+
+
+    rowAll.dataset.clase =
+      'all';
+
+
+    rowAll.innerHTML = `
+
+      <span
+        class="sw"
+        style="
+          background:
+          linear-gradient(
+            135deg,
+            #FF69B4,
+            #8A2BE2,
+            #228B22
+          )
+        "
+      ></span>
+
+      <div class="crop-row-main">
+
+        <div class="crop-row-top">
+
+          <span class="crop-name">
+            Ver todos los cultivos
+          </span>
+
+        </div>
+
+      </div>
+    `;
+
+
+    rowAll.addEventListener(
+      'click',
+      () => {
+
+        selectedClase =
+          null;
+
+        setHighlight(
+          null
+        );
+
+        updateSidebarActive();
+
+        infoBox
+          .classList
+          .remove('show');
+      }
+    );
+
+
+    cropListEl.appendChild(
+      rowAll
+    );
+
+
+    const areasDelAnio =
+      areasActivas();
+
+
+    const areas =
+      areasDelAnio
+        ? Object.values(
+            areasDelAnio
+          ).map(Number)
+        : null;
+
+
+    const maxArea =
+      areas && areas.length
+        ? Math.max(...areas)
+        : null;
+
+
+    Object.keys(CLASES)
+      .forEach(k => {
+
+        const clase =
+          Number(k);
+
+
+        const [
+          nombre,
+          color
+        ] =
+          CLASES[clase];
+
+
+        const areaHa =
+          areasDelAnio
+            ? areasDelAnio[
+                String(clase)
+              ]
+            : undefined;
+
+
+        const row =
+          document.createElement(
+            'div'
+          );
+
+
+        row.className =
+          'crop-row';
+
+
+        row.dataset.clase =
+          String(clase);
+
+
+        const barHtml =
+          (
+            areaHa !== undefined &&
+            maxArea
+          )
+
+            ? `
+              <div class="crop-bar-track">
+
+                <div
+                  class="crop-bar-fill"
+                  style="
+                    width:${Math.max(
+                      4,
+                      Number(areaHa) /
+                      maxArea *
+                      100
+                    )}%;
+                    background:${color}
+                  "
+                ></div>
+
+              </div>
+            `
+
+            : '';
+
+
+        row.innerHTML = `
+
+          <span
+            class="sw"
+            style="
+              background:${color}
+            "
+          ></span>
+
+          <div class="crop-row-main">
+
+            <div class="crop-row-top">
+
+              <span class="crop-name">
+                ${nombre}
+              </span>
+
+              ${
+                areaHa !== undefined
+
+                  ? `<span class="crop-value">
+                      ${formatHa(areaHa)}
+                     </span>`
+
+                  : ''
+              }
+
+            </div>
+
+            ${barHtml}
+
+          </div>
+        `;
+
+
+        row.addEventListener(
+          'click',
+          () =>
+            selectClase(
+              clase
+            )
+        );
+
+
+        cropListEl.appendChild(
+          row
+        );
+      });
+  }
+
+
   buildCropSidebar();
 
+  buildYearToggle();
 
-  /* ==========================================================
-     AÑO
-     ========================================================== */
-
-  document
-    .getElementById('btnActual')
-    .onclick = () => {
-
-      activarAnio('actual');
-
-    };
-
-
-  document
-    .getElementById('btnHist')
-    .onclick = () => {
-
-      activarAnio('hist');
-
-    };
+  setupCompareToggle();
 
 
   /* ==========================================================
-     RELIEVE
+     CONTROL DE RELIEVE
      ========================================================== */
 
-  document
-    .getElementById('reliefSlider')
+  const reliefRange =
+    document.getElementById(
+      'reliefRange'
+    );
+
+
+  const reliefValue =
+    document.getElementById(
+      'reliefValue'
+    );
+
+
+  reliefRange.addEventListener(
+    'input',
+    () => {
+
+      const mult =
+        parseFloat(
+          reliefRange.value
+        );
+
+
+      reliefValue.textContent =
+        mult.toFixed(1) +
+        'x';
+
+
+      zScale =
+        BASE_Z_SCALE *
+        mult;
+
+
+      for (
+        let idx = 0;
+        idx < pos.count;
+        idx++
+      ) {
+
+        pos.setY(
+
+          idx,
+
+          normArr[idx] *
+          zScale
+        );
+      }
+
+
+      pos.needsUpdate =
+        true;
+
+
+      geometry.computeVertexNormals();
+
+
+      /*
+       * MUY IMPORTANTE:
+       * movemos también los íconos de caña
+       * para que sigan la superficie.
+       */
+
+      actualizarAlturaIconos();
+
+
+      /*
+       * Si había un marcador puntual,
+       * lo retiramos porque cambió la altura.
+       */
+
+      if (marcador) {
+
+        scene.remove(
+          marcador
+        );
+
+        marcador =
+          null;
+
+        infoBox
+          .classList
+          .remove('show');
+      }
+    }
+  );
+
+
+  /* ==========================================================
+     IDENTIFICACIÓN DE PUNTOS
+     ========================================================== */
+
+  function pickAt(
+    clientX,
+    clientY
+  ) {
+
+    const rect =
+      renderer.domElement
+        .getBoundingClientRect();
+
+
+    mouse.x =
+      (
+        (clientX - rect.left) /
+        rect.width
+      ) * 2 - 1;
+
+
+    mouse.y =
+      -(
+        (clientY - rect.top) /
+        rect.height
+      ) * 2 + 1;
+
+
+    raycaster.setFromCamera(
+      mouse,
+      camera
+    );
+
+
+    const hits =
+      raycaster.intersectObject(
+        terrain
+      );
+
+
+    if (
+      hits.length === 0 ||
+      !hits[0].uv
+    ) {
+      return null;
+    }
+
+
+    const u =
+      hits[0].uv.x;
+
+
+    const v =
+      hits[0].uv.y;
+
+
+    const ix =
+      Math.min(
+        n - 1,
+        Math.max(
+          0,
+          Math.round(
+            u * (n - 1)
+          )
+        )
+      );
+
+
+    const iy =
+      Math.min(
+        n - 1,
+        Math.max(
+          0,
+          Math.round(
+            (1 - v) *
+            (n - 1)
+          )
+        )
+      );
+
+
+    const idx =
+      iy * n + ix;
+
+
+    const clase =
+      Math.round(
+        clasifLookup[idx]
+      );
+
+
+    const info =
+      CLASES[clase];
+
+
+    return {
+
+      info,
+
+      h:
+        heights[idx],
+
+      point:
+        hits[0].point,
+
+      clase
+    };
+  }
+
+
+  /* ==========================================================
+     MARCADOR
+     ========================================================== */
+
+  let marcador =
+    null;
+
+
+  function createMarker(
+    colorHex
+  ) {
+
+    const group =
+      new THREE.Group();
+
+
+    const color =
+      new THREE.Color(
+        colorHex ||
+        '#ffffff'
+      );
+
+
+    const mat =
+      new THREE.MeshBasicMaterial({
+        color
+      });
+
+
+    const poleHeight =
+      12;
+
+
+    const pole =
+      new THREE.Mesh(
+
+        new THREE.CylinderGeometry(
+          0.35,
+          0.35,
+          poleHeight,
+          8
+        ),
+
+        mat
+      );
+
+
+    pole.position.y =
+      poleHeight / 2;
+
+
+    group.add(
+      pole
+    );
+
+
+    const tip =
+      new THREE.Mesh(
+
+        new THREE.ConeGeometry(
+          1.3,
+          3,
+          10
+        ),
+
+        mat
+      );
+
+
+    tip.position.y =
+      poleHeight + 1.5;
+
+
+    group.add(
+      tip
+    );
+
+
+    const base =
+      new THREE.Mesh(
+
+        new THREE.RingGeometry(
+          1.2,
+          1.8,
+          16
+        ),
+
+        new THREE.MeshBasicMaterial({
+
+          color,
+
+          side:
+            THREE.DoubleSide
+        })
+      );
+
+
+    base.rotation.x =
+      -Math.PI / 2;
+
+
+    base.position.y =
+      0.05;
+
+
+    group.add(
+      base
+    );
+
+
+    return group;
+  }
+
+
+  function placeMarker(
+    point,
+    colorHex
+  ) {
+
+    if (marcador) {
+
+      scene.remove(
+        marcador
+      );
+
+
+      marcador.traverse(
+        o => {
+
+          if (o.geometry) {
+            o.geometry.dispose();
+          }
+
+          if (o.material) {
+            o.material.dispose();
+          }
+        }
+      );
+    }
+
+
+    marcador =
+      createMarker(
+        colorHex
+      );
+
+
+    marcador.position.copy(
+      point
+    );
+
+
+    scene.add(
+      marcador
+    );
+  }
+
+
+  /* ==========================================================
+     HOVER
+     ========================================================== */
+
+  renderer.domElement
     .addEventListener(
-      'input',
-      e => {
+      'mousemove',
+      (ev) => {
 
-        const factor =
-          Number(e.target.value);
+        const result =
+          pickAt(
+            ev.clientX,
+            ev.clientY
+          );
 
 
-        for (
-          let i = 0;
-          i < n * n;
-          i++
+        if (result) {
+
+          tooltip.innerHTML =
+            result.info
+
+              ? `<b>
+                   ${result.info[0]}
+                 </b>
+                 ·
+                 ${result.h.toFixed(0)} m`
+
+              : `Sin clasificar
+                 ·
+                 ${result.h.toFixed(0)} m`;
+
+
+          tooltip.style.left =
+            ev.clientX + 'px';
+
+
+          tooltip.style.top =
+            ev.clientY + 'px';
+
+
+          tooltip.classList.add(
+            'show'
+          );
+
+        } else {
+
+          tooltip.classList.remove(
+            'show'
+          );
+        }
+      }
+    );
+
+
+  renderer.domElement
+    .addEventListener(
+      'mouseleave',
+      () => {
+
+        tooltip.classList.remove(
+          'show'
+        );
+      }
+    );
+
+
+  /* ==========================================================
+     CLICK / TAP
+     ========================================================== */
+
+  let pointerDownInfo =
+    null;
+
+
+  renderer.domElement
+    .addEventListener(
+      'pointerdown',
+      (ev) => {
+
+        pointerDownInfo = {
+
+          x:
+            ev.clientX,
+
+          y:
+            ev.clientY,
+
+          t:
+            Date.now()
+        };
+      }
+    );
+
+
+  renderer.domElement
+    .addEventListener(
+      'pointerup',
+      (ev) => {
+
+        if (!pointerDownInfo) {
+          return;
+        }
+
+
+        const dx =
+          ev.clientX -
+          pointerDownInfo.x;
+
+
+        const dy =
+          ev.clientY -
+          pointerDownInfo.y;
+
+
+        const moved =
+          Math.sqrt(
+            dx * dx +
+            dy * dy
+          );
+
+
+        const elapsed =
+          Date.now() -
+          pointerDownInfo.t;
+
+
+        pointerDownInfo =
+          null;
+
+
+        if (
+          moved > 10 ||
+          elapsed > 600
         ) {
+          return;
+        }
 
-          const normalized =
-            (heights[i] - min) /
-            Math.max(
-              .0001,
-              max - min
+
+        const result =
+          pickAt(
+            ev.clientX,
+            ev.clientY
+          );
+
+
+        if (result) {
+
+          placeMarker(
+
+            result.point,
+
+            result.info
+              ? result.info[1]
+              : '#ffffff'
+          );
+
+
+          if (result.info) {
+
+            selectClase(
+              result.clase,
+              result.h
             );
 
+          } else {
 
-          pos.setY(
+            infoBox.innerHTML =
+              `Sin clasificar
+               · elevación
+               ${result.h.toFixed(0)} m`;
 
-            i,
 
-            normalized *
-            BASE_Z_SCALE *
-            factor
-
-          );
-
+            infoBox.classList.add(
+              'show'
+            );
+          }
         }
-
-
-        geometry.computeVertexNormals();
-
-
-        /*
-         * MUY IMPORTANTE:
-         * los íconos se vuelven a apoyar
-         * sobre la nueva superficie.
-         */
-
-        actualizarAlturaTodosLosIconos();
-
-
-        if (marker) {
-
-          scene.remove(
-            marker
-          );
-
-          marker = null;
-
-        }
-
       }
     );
 
@@ -1859,24 +4460,7 @@ function buildScene(
         window.innerWidth,
         window.innerHeight
       );
-
     }
-  );
-
-
-  /* ==========================================================
-     MOUSE
-     ========================================================== */
-
-  renderer.domElement.addEventListener(
-    'mousemove',
-    onMouseMove
-  );
-
-
-  renderer.domElement.addEventListener(
-    'click',
-    onMouseClick
   );
 
 
@@ -1884,1231 +4468,42 @@ function buildScene(
      ANIMACIÓN
      ========================================================== */
 
-  animate();
+  (function animate() {
 
-}
-
-
-/* ============================================================
-   VARIABLE GLOBAL PARA RELIEVE
-   ============================================================ */
-
-let heights = null;
-let min = Infinity;
-let max = -Infinity;
-
-
-/* ============================================================
-   SIDEBAR
-   ============================================================ */
-
-function buildCropSidebar() {
-
-  const list =
-    document.getElementById(
-      'cropList'
+    requestAnimationFrame(
+      animate
     );
 
-
-  list.innerHTML = '';
-
-
-  /* ==========================================================
-     VER TODOS
-     ========================================================== */
-
-  const all =
-    document.createElement(
-      'div'
-    );
-
-
-  all.className =
-    'cropItem';
-
-
-  all.innerHTML = `
-
-    <div
-      class="cropColor"
-      style="
-        background:
-        linear-gradient(
-          45deg,
-          #777,
-          #222
-        );
-      ">
-    </div>
-
-    <div class="cropName">
-      Ver todos
-    </div>
-
-  `;
-
-
-  all.onclick = () => {
-
-    selectedClase =
-      null;
-
-
-    document
-      .querySelectorAll(
-        '.cropItem'
-      )
-      .forEach(
-        x =>
-          x.classList.remove(
-            'active'
-          )
-      );
-
-
-    all.classList.add(
-      'active'
-    );
-
-
-    setHighlight(
-      null
-    );
-
-  };
-
-
-  list.appendChild(
-    all
-  );
-
-
-  /* ==========================================================
-     CLASES
-     ========================================================== */
-
-  Object.keys(
-    CLASES
-  ).forEach(
-    id => {
-
-      const item =
-        document.createElement(
-          'div'
-        );
-
-
-      item.className =
-        'cropItem';
-
-
-      item.dataset.clase =
-        id;
-
-
-      const area =
-        getAreaForClass(
-          Number(id)
-        );
-
-
-      item.innerHTML = `
-
-        <div
-          class="cropColor"
-          style="
-            background:${CLASES[id][1]}
-          ">
-        </div>
-
-        <div class="cropName">
-          ${CLASES[id][0]}
-        </div>
-
-        <div class="cropArea">
-          ${area}
-        </div>
-
-      `;
-
-
-      item.onclick = () => {
-
-        selectClase(
-          Number(id)
-        );
-
-      };
-
-
-      list.appendChild(
-        item
-      );
-
-    }
-  );
-
-}
-
-
-/* ============================================================
-   ÁREA
-   ============================================================ */
-
-function getAreaForClass(
-  clase
-) {
-
-  const data =
-    currentYear === 'actual'
-      ? areasActual
-      : areasHist;
-
-
-  if (!data) return '';
-
-
-  const value =
-    data[clase] ??
-    data[String(clase)];
-
-
-  if (
-    value === undefined ||
-    value === null
-  ) {
-
-    return '';
-
-  }
-
-
-  const number =
-    Number(value);
-
-
-  if (
-    Number.isNaN(number)
-  ) {
-
-    return '';
-
-  }
-
-
-  return (
-    number.toLocaleString(
-      'es-AR',
-      {
-        maximumFractionDigits: 0
-      }
-    )
-    + ' ha'
-  );
-
-}
-
-
-/* ============================================================
-   SELECCIONAR CLASE
-   ============================================================ */
-
-function selectClase(
-  clase
-) {
-
-  if (
-    selectedClase === clase
-  ) {
-
-    selectedClase =
-      null;
-
-
-    document
-      .querySelectorAll(
-        '.cropItem'
-      )
-      .forEach(
-        x =>
-          x.classList.remove(
-            'active'
-          )
-      );
-
-
-    setHighlight(
-      null
-    );
-
-
-    return;
-
-  }
-
-
-  selectedClase =
-    clase;
-
-
-  document
-    .querySelectorAll(
-      '.cropItem'
-    )
-    .forEach(
-      x => {
-
-        x.classList.toggle(
-
-          'active',
-
-          Number(
-            x.dataset.clase
-          ) === clase
-
-        );
-
-      }
-    );
-
-
-  setHighlight(
-    clase
-  );
-
-}
-
-
-/* ============================================================
-   HIGHLIGHT
-   ============================================================ */
-
-function setHighlight(
-  clase
-) {
-
-  const base =
-    currentTextureInfo.baseColors;
-
-
-  const clasifTex =
-    currentTextureInfo.clasifTex;
-
-
-  if (
-    clase === null
-  ) {
-
-    workBuffer.set(
-      base
-    );
-
-  } else {
-
-    for (
-      let i = 0,
-      p = 0;
-
-      i < clasifTex.length;
-
-      i++,
-      p += 4
-
-    ) {
-
-      if (
-        Math.round(
-          clasifTex[i]
-        ) === clase
-      ) {
-
-        workBuffer[p] =
-          base[p];
-
-        workBuffer[p + 1] =
-          base[p + 1];
-
-        workBuffer[p + 2] =
-          base[p + 2];
-
-        workBuffer[p + 3] =
-          255;
-
-      } else {
-
-        const gris =
-
-          (
-            0.299 *
-            base[p] +
-
-            0.587 *
-            base[p + 1] +
-
-            0.114 *
-            base[p + 2]
-
-          ) * 0.35;
-
-
-        workBuffer[p] =
-          gris;
-
-        workBuffer[p + 1] =
-          gris;
-
-        workBuffer[p + 2] =
-          gris;
-
-        workBuffer[p + 3] =
-          255;
-
-      }
-
-    }
-
-  }
-
-
-  currentTextureInfo.ctx.putImageData(
-
-    new ImageData(
-
-      workBuffer,
-
-      TEX_SIZE,
-
-      TEX_SIZE
-
-    ),
-
-    0,
-    0
-
-  );
-
-
-  texture.needsUpdate =
-    true;
-
-
-  /* ==========================================================
-     ÍCONOS
-     ========================================================== */
-
-  if (
-    window._cultivosIconos
-  ) {
-
-    Object.keys(
-      window._cultivosIconos.groups
-    ).forEach(
-      claseString => {
-
-        const claseIcono =
-          Number(claseString);
-
-
-        const group =
-          window._cultivosIconos.groups[
-            claseIcono
-          ];
-
-
-        /*
-         * Solamente se muestran los íconos
-         * de la clase actualmente seleccionada.
-         */
-
-        if (
-          clase === claseIcono
-        ) {
-
-          if (
-
-            window._cultivosIconos
-              .textures[claseIcono]
-
-            &&
-
-            window._cultivosIconos
-              .materials[claseIcono]
-
-          ) {
-
-            window._cultivosIconos
-              .crear(
-
-                claseIcono,
-
-                clasifLookup
-
-              );
-
-
-            group.visible =
-              true;
-
-          } else {
-
-            group.visible =
-              false;
-
-          }
-
-        } else {
-
-          group.visible =
-            false;
-
-        }
-
-      }
-    );
-
-  }
-
-}
-
-
-/* ============================================================
-   CAMBIAR AÑO
-   ============================================================ */
-
-function activarAnio(
-  cual
-) {
-
-  currentYear =
-    cual;
-
-
-  document
-    .getElementById(
-      'btnActual'
-    )
-    .classList.toggle(
-      'active',
-      cual === 'actual'
-    );
-
-
-  document
-    .getElementById(
-      'btnHist'
-    )
-    .classList.toggle(
-      'active',
-      cual === 'hist'
-    );
-
-
-  if (
-    cual === 'actual'
-  ) {
-
-    clasifLookup =
-      actualBundle.clasifLookup;
-
-
-    currentTextureInfo =
-      actualBundle.textureInfo;
-
-
-  } else {
-
-    if (!histBundle) {
-
-      console.warn(
-        'No existe clasificación histórica.'
-      );
-
-      return;
-
-    }
-
-
-    clasifLookup =
-      histBundle.clasifLookup;
-
-
-    currentTextureInfo =
-      histBundle.textureInfo;
-
-  }
-
-
-  texture =
-    currentTextureInfo.texture;
-
-
-  terrain.material.map =
-    texture;
-
-
-  terrain.material.needsUpdate =
-    true;
-
-
-  buildCropSidebar();
-
-
-  /*
-   * Se vuelve a aplicar el highlight
-   * utilizando la clasificación del año seleccionado.
-   *
-   * Esto también reconstruye los íconos.
-   */
-
-  setHighlight(
-    selectedClase
-  );
-
-
-  if (marker) {
-
-    scene.remove(
-      marker
-    );
-
-    marker = null;
-
-  }
-
-
-  updateInfoCard();
-
-}
-
-
-/* ============================================================
-   PICK
-   ============================================================ */
-
-function pickAt(
-  event
-) {
-
-  const rect =
-    renderer.domElement
-      .getBoundingClientRect();
-
-
-  mouse.x =
-    (
-      (event.clientX -
-       rect.left)
-      /
-      rect.width
-    ) * 2 - 1;
-
-
-  mouse.y =
-    -(
-      (event.clientY -
-       rect.top)
-      /
-      rect.height
-    ) * 2 + 1;
-
-
-  raycaster.setFromCamera(
-    mouse,
-    camera
-  );
-
-
-  const hits =
-    raycaster.intersectObject(
-      terrain
-    );
-
-
-  if (
-    !hits.length
-  ) {
-
-    return null;
-
-  }
-
-
-  const hit =
-    hits[0];
-
-
-  const uv =
-    hit.uv;
-
-
-  if (!uv) {
-
-    return null;
-
-  }
-
-
-  const ix =
-    Math.min(
-
-      n - 1,
-
-      Math.max(
-
-        0,
-
-        Math.round(
-          uv.x *
-          (n - 1)
-        )
-
-      )
-
-    );
-
-
-  const iy =
-    Math.min(
-
-      n - 1,
-
-      Math.max(
-
-        0,
-
-        Math.round(
-
-          (1 - uv.y) *
-          (n - 1)
-
-        )
-
-      )
-
-    );
-
-
-  const idx =
-    iy * n + ix;
-
-
-  const clase =
-    Math.round(
-      clasifLookup[idx]
-    );
-
-
-  return {
-
-    point:
-      hit.point,
-
-    clase,
-
-    h:
-      pos.getY(idx)
-
-  };
-
-}
-
-
-/* ============================================================
-   MOUSE MOVE
-   ============================================================ */
-
-function onMouseMove(
-  event
-) {
-
-  const result =
-    pickAt(event);
-
-
-  const tooltip =
-    document.getElementById(
-      'tooltip'
-    );
-
-
-  if (!result) {
-
-    tooltip.style.display =
-      'none';
-
-    return;
-
-  }
-
-
-  const nombre =
-    CLASES[result.clase]
-      ? CLASES[result.clase][0]
-      : 'Sin datos';
-
-
-  tooltip.style.display =
-    'block';
-
-
-  tooltip.style.left =
-    (event.clientX + 12)
-    + 'px';
-
-
-  tooltip.style.top =
-    (event.clientY + 12)
-    + 'px';
-
-
-  tooltip.textContent =
-    nombre;
-
-}
-
-
-/* ============================================================
-   MOUSE CLICK
-   ============================================================ */
-
-function onMouseClick(
-  event
-) {
-
-  const result =
-    pickAt(event);
-
-
-  if (!result) return;
-
-
-  selectClase(
-    result.clase
-  );
-
-
-  createMarker(
-    result.point
-  );
-
-
-  updateInfoCard(
-    result.clase,
-    result.h
-  );
-
-}
-
-
-/* ============================================================
-   MARKER
-   ============================================================ */
-
-function createMarker(
-  point
-) {
-
-  if (marker) {
-
-    scene.remove(
-      marker
-    );
-
-  }
-
-
-  marker =
-    new THREE.Group();
-
-
-  const pole =
-    new THREE.Mesh(
-
-      new THREE.CylinderGeometry(
-        .7,
-        .7,
-        10,
-        12
-      ),
-
-      new THREE.MeshBasicMaterial({
-        color: 0xffffff
-      })
-
-    );
-
-
-  pole.position.y =
-    5;
-
-
-  marker.add(
-    pole
-  );
-
-
-  const cone =
-    new THREE.Mesh(
-
-      new THREE.ConeGeometry(
-        2.2,
-        5,
-        16
-      ),
-
-      new THREE.MeshBasicMaterial({
-        color: 0xffffff
-      })
-
-    );
-
-
-  cone.position.y =
-    10;
-
-
-  marker.add(
-    cone
-  );
-
-
-  marker.position.copy(
-    point
-  );
-
-
-  scene.add(
-    marker
-  );
-
-}
-
-
-/* ============================================================
-   INFO CARD
-   ============================================================ */
-
-function updateInfoCard(
-  clase,
-  h
-) {
-
-  const card =
-    document.getElementById(
-      'infoCard'
-    );
-
-
-  if (
-    clase === undefined ||
-    clase === null
-  ) {
-
-    card.innerHTML = `
-
-      <h3>
-        Explorá el territorio
-      </h3>
-
-      <p>
-        Hacé clic sobre el terreno
-        para consultar la clase agrícola.
-      </p>
-
-      <p>
-        También podés seleccionar un cultivo
-        desde el panel lateral.
-      </p>
-
-    `;
-
-
-    return;
-
-  }
-
-
-  const info =
-    CLASES[clase];
-
-
-  if (!info) return;
-
-
-  card.innerHTML = `
-
-    <h3>
-      ${info[0]}
-    </h3>
-
-    <p>
-      Año:
-      ${
-        currentYear === 'actual'
-          ? 'Actual'
-          : '2018'
-      }
-    </p>
-
-    <p>
-      Elevación relativa:
-      ${
-        Number(h || 0)
-          .toFixed(1)
-      }
-    </p>
-
-  `;
-
-}
-
-
-/* ============================================================
-   ANIMACIÓN
-   ============================================================ */
-
-function animate() {
-
-  requestAnimationFrame(
-    animate
-  );
-
-
-  if (controls) {
 
     controls.update();
 
-  }
-
-
-  if (renderer && scene && camera) {
 
     renderer.render(
       scene,
       camera
     );
 
-  }
-
-}
-
-
-/* ============================================================
-   CARGAR DATOS
-   ============================================================ */
-
-async function construirEscena() {
-
-  try {
-
-    const dem =
-      filesLoaded.dem
-      ||
-      await readTiffFull(
-        DATA_SOURCES.dem
-      );
-
-
-    const clasif =
-      filesLoaded.clasif
-      ||
-      await readTiffFull(
-        DATA_SOURCES.clasif
-      );
-
-
-    const areasResponse =
-      await fetch(
-        DATA_SOURCES.areas
-      );
-
-
-    if (
-      areasResponse.ok
-    ) {
-
-      areasActual =
-        await areasResponse.json();
-
-    }
-
-
-    const textureInfo =
-      buildColorTexture(
-
-        clasif.data,
-
-        clasif.width,
-
-        clasif.height
-
-      );
-
-
-    let historicalBundle =
-      null;
-
-
-    try {
-
-      const clasifHist =
-        filesLoaded.clasifHist
-        ||
-        await readTiffFull(
-          DATA_SOURCES.clasifHist
-        );
-
-
-      const histTextureInfo =
-        buildColorTexture(
-
-          clasifHist.data,
-
-          clasifHist.width,
-
-          clasifHist.height
-
-        );
-
-
-      let areasHistResponse =
-        await fetch(
-          DATA_SOURCES.areasHist
-        );
-
-
-      if (
-        areasHistResponse.ok
-      ) {
-
-        areasHist =
-          await areasHistResponse.json();
-
-      }
-
-
-      historicalBundle = {
-
-        clasifLookup:
-          histTextureInfo.clasifLookup,
-
-        textureInfo:
-          histTextureInfo
-
-      };
-
-
-    } catch (
-      error
-    ) {
-
-      console.warn(
-        'No se pudo cargar clasificación histórica:',
-        error
-      );
-
-    }
-
-
-    buildScene(
-
-      dem,
-
-      clasif,
-
-      textureInfo,
-
-      historicalBundle
-
-    );
-
-
-  } catch (
-    error
-  ) {
-
-    console.error(
-      error
-    );
-
-
-    alert(
-      'No se pudieron cargar los datos. Revisá que los archivos estén dentro de la carpeta data/.'
-    );
-
-  }
-
-}
-
-
-/* ============================================================
-   SPLASH
-   ============================================================ */
-
-document
-  .getElementById(
-    'startButton'
-  )
-  .addEventListener(
-    'click',
-    async () => {
-
-      const splash =
-        document.getElementById(
-          'splash'
-        );
-
-
-      splash.style.opacity =
-        '0';
-
-
-      setTimeout(
-        () => {
-
-          splash.style.display =
-            'none';
-
-        },
-        600
-      );
-
-
-      await construirEscena();
-
-
-      document
-        .getElementById(
-          'tutorial'
-        )
-        .style.display =
-          'block';
-
-    }
-  );
-
-
-/* ============================================================
-   TUTORIAL
-   ============================================================ */
-
-document
-  .getElementById(
-    'closeTutorial'
-  )
-  .addEventListener(
-    'click',
+  })();
+
+
+  /*
+   * ==========================================================
+   * CARGAMOS EL PNG DESDE EL PRINCIPIO
+   * ==========================================================
+   *
+   * No mostramos todavía los íconos.
+   * Solo dejamos la textura preparada para cuando
+   * el usuario seleccione Caña de azúcar.
+   */
+
+  cargarIconoCana(
     () => {
-
-      document
-        .getElementById(
-          'tutorial'
-        )
-        .style.display =
-          'none';
-
+      console.log(
+        '🌱 Imagen de caña lista para usar.'
+      );
     }
   );
+}
 
 </script>
 
