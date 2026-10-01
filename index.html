@@ -838,8 +838,9 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, histBundl
     buildYearToggle();
     buildCropSidebar();
     setHighlight(selectedClase);
-    // Un click puntual (palito + elevación) quedó atado a la clasificación del año anterior: lo limpiamos.
+    // Un click puntual (palito + elevación + foto) quedó atado a la clasificación del año anterior: lo limpiamos.
     if (marcador) { scene.remove(marcador); marcador = null; }
+    clearCropImage();
     if (selectedClase !== null) renderCard(selectedClase);
   }
 
@@ -933,8 +934,27 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, histBundl
       img: 'img/soja.jpg',
       texto: 'La soja es una oleaginosa de ciclo estival y uno de los principales cultivos de exportación de Argentina. Se procesa industrialmente para separar el aceite de la harina proteica.',
       productos: ['Aceite de soja', 'Harina/pellets (alimento balanceado)', 'Biodiesel']
+    },
+    4: {
+      img: 'img/monte.jpg',
+      texto: 'El monte nativo es la vegetación boscosa original de la región (Chaco Serrano y Selva Pedemontana en las zonas más húmedas de Tucumán). No es un cultivo: es lo que queda del ecosistema original cuando no fue desmontado, y cumple un rol clave en la regulación hídrica y la conservación del suelo de todo el territorio agrícola que lo rodea.',
+      productos: ['Biodiversidad y hábitat', 'Regulación del ciclo hídrico', 'Protección contra la erosión', 'Captura de carbono']
+    },
+    5: {
+      img: 'img/pasturas.jpg',
+      texto: 'Las pasturas son superficies con pastizales naturales o implantados, destinadas principalmente a la alimentación del ganado. Pueden ser permanentes o parte de una rotación con cultivos agrícolas, y suelen ocupar los terrenos con mayores limitantes para la agricultura extensiva.',
+      productos: ['Carne (ganadería bovina)', 'Leche', 'Forraje', 'Cobertura y protección del suelo']
+    },
+    7: {
+      img: 'img/sorgo.jpg',
+      texto: 'El sorgo es un cereal de ciclo estival, más resistente a la sequía que el maíz. Se usa principalmente como forraje y alimento animal, y suele elegirse en los lotes con suelos más pobres o en años de menor disponibilidad de agua.',
+      productos: ['Alimento animal (grano y forraje)', 'Silaje', 'Etanol', 'Rotación y cobertura de suelos']
+    },
+    8: {
+      img: 'img/barbecho.jpg',
+      texto: 'El barbecho es un lote agrícola que en el momento de la imagen está sin cultivo activo: tierra preparada o en descanso dentro de la rotación, entre una cosecha y la siembra siguiente. No genera un producto en sí, pero es una etapa necesaria del manejo del suelo.',
+      productos: []
     }
-    // 4: Monte nativo, 5: Pasturas, 7: Sorgo, 8: Barbecho — se pueden sumar con la misma forma.
   };
 
   function showCropInfo(clase) {
@@ -958,6 +978,9 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, histBundl
     } else {
       selectedClase = clase;
     }
+    // Si vino de la sidebar (sin elevM) no hay un punto 3D nuevo al que anclar la foto flotante;
+    // si vino de un click en el terreno, quien llama a selectClase la vuelve a colocar después.
+    if (elevM === undefined) clearCropImage();
     setHighlight(selectedClase);
     updateSidebarActive();
     if (selectedClase === null) {
@@ -982,6 +1005,7 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, histBundl
       <div class="crop-row-main"><div class="crop-row-top"><span class="crop-name">Ver todos los cultivos</span></div></div>`;
     rowAll.addEventListener('click', () => {
       selectedClase = null;
+      clearCropImage();
       setHighlight(null);
       updateSidebarActive();
       infoBox.classList.remove('show');
@@ -1024,8 +1048,9 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, histBundl
     for (let idx = 0; idx < pos.count; idx++) pos.setY(idx, normArr[idx] * zScale);
     pos.needsUpdate = true;
     geometry.computeVertexNormals();
-    // Si había un palito clavado, el relieve nuevo ya no coincide con su altura: lo retiramos.
+    // Si había un palito clavado (y su foto flotante), el relieve nuevo ya no coincide con su altura: los retiramos.
     if (marcador) { scene.remove(marcador); marcador = null; infoBox.classList.remove('show'); }
+    clearCropImage();
   });
 
   function pickAt(clientX, clientY) {
@@ -1074,30 +1099,35 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, histBundl
     scene.add(marcador);
   }
 
-  // Imagen flotante de la caña: aparece sobre el marcador SOLO cuando la clase clickeada
-  // es Caña de azúcar (clase 1). Subí tu foto al repo como img/cana.png (o cambiá la ruta acá).
+  // Imagen flotante sobre el marcador: muestra la foto del cultivo clickeado, para cualquier
+  // clase que tenga una imagen cargada en CROP_INFO (ya no está limitado a caña). Cachea cada
+  // textura la primera vez que se pide, así clickear el mismo cultivo de nuevo no la recarga.
   const textureLoader = new THREE.TextureLoader();
-  let canaTexture = null;
-  let canaSprite = null;
-  const RUTA_IMAGEN_CANA = 'img/cana.jpg';
+  const cropTextureCache = {}; // clase -> THREE.Texture
+  let cropSprite = null;
+
+  function clearCropImage() {
+    if (cropSprite) { scene.remove(cropSprite); cropSprite.material.dispose(); cropSprite = null; }
+  }
 
   function placeCropImage(point, clase) {
-    if (canaSprite) { scene.remove(canaSprite); canaSprite.material.dispose(); canaSprite = null; }
-    if (clase !== 1) return; // solo se muestra para caña de azúcar
+    clearCropImage();
+    const datos = CROP_INFO[clase];
+    if (!datos || !datos.img) return; // todavía no hay foto cargada para este cultivo
     const usarTextura = (tex) => {
       const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
       const sprite = new THREE.Sprite(mat);
       sprite.scale.set(11, 11, 1);
       sprite.position.set(point.x, point.y + 19, point.z);
-      canaSprite = sprite;
+      cropSprite = sprite;
       scene.add(sprite);
     };
-    if (canaTexture) { usarTextura(canaTexture); return; }
+    if (cropTextureCache[clase]) { usarTextura(cropTextureCache[clase]); return; }
     textureLoader.load(
-      RUTA_IMAGEN_CANA,
-      (tex) => { canaTexture = tex; usarTextura(tex); },
+      datos.img,
+      (tex) => { cropTextureCache[clase] = tex; usarTextura(tex); },
       undefined,
-      (err) => console.warn('[imagen caña] no se encontró', RUTA_IMAGEN_CANA, '— subila al repo para que aparezca.', err)
+      (err) => console.warn('[imagen cultivo]', datos.img, 'no se encontró — subila al repo para que aparezca.', err)
     );
   }
 
@@ -1139,7 +1169,9 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, histBundl
       placeMarker(result.point, result.info ? result.info[1] : '#ffffff');
       if (result.info) {
         selectClase(result.clase, result.h);
+        placeCropImage(result.point, result.clase);
       } else {
+        clearCropImage();
         infoBox.innerHTML = `Sin clasificar · elevación ${result.h.toFixed(0)} m`;
         infoBox.classList.add('show');
       }
