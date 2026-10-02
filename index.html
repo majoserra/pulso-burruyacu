@@ -767,32 +767,6 @@ async function intentarAutoCarga() {
 }
 intentarAutoCarga();
 
-  
-async function intentarAutoCarga() {
-  console.log('[auto-carga] buscando archivos en:', DATA_SOURCES.dem, 'y', DATA_SOURCES.clasif);
-  const [demOk, clasifOk] = await Promise.all([archivoExiste(DATA_SOURCES.dem), archivoExiste(DATA_SOURCES.clasif)]);
-  if (!demOk || !clasifOk) {
-    console.warn('[auto-carga] falta DEM o clasificación, se muestra la pantalla manual. demOk =', demOk, '| clasifOk =', clasifOk);
-    document.getElementById('splash').classList.add('hidden');
-    document.getElementById('dropzone').classList.remove('hidden');
-    return;
-  }
-  console.log('[auto-carga] DEM y clasificación encontrados, construyendo escena...');
-
-  if (DATA_SOURCES.areas) {
-    try { areasPorClase = await (await fetch(DATA_SOURCES.areas)).json(); } catch (e) { console.warn('[auto-carga] no se pudo leer', DATA_SOURCES.areas, e.message); }
-  }
-  let clasifHistSource = null;
-  if (await archivoExiste(DATA_SOURCES.clasifHist)) {
-    clasifHistSource = DATA_SOURCES.clasifHist;
-    if (DATA_SOURCES.areasHist) {
-      try { areasPorClaseHist = await (await fetch(DATA_SOURCES.areasHist)).json(); } catch (e) { console.warn('[auto-carga] no se pudo leer', DATA_SOURCES.areasHist, e.message); }
-    }
-  }
-  construirEscena(DATA_SOURCES.dem, DATA_SOURCES.clasif, clasifHistSource, DATA_SOURCES.anioHist);
-}
-intentarAutoCarga();
-
 function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, indiceInicial) {
   let min = Infinity, max = -Infinity;
   for (let i = 0; i < demArr.length; i++) {
