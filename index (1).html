@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prototipo 3D - Burruyacú</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: rgba(20,24,30,0.9);
+    --text: #e8eaed;
+    --muted: #9aa0a6;
+    --accent: #FF69B4;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f4f5f7; --panel: rgba(255,255,255,0.92); --text: #1a1c1f; --muted: #55595e;
+    }
+  }
+  :root[data-theme="light"] { --bg: #f4f5f7; --panel: rgba(255,255,255,0.92); --text: #1a1c1f; --muted: #55595e; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+  }
+  #canvas-wrap { position: fixed; inset: 0; }
+  canvas { display: block; }
+
+  #dropzone {
+    position: fixed; inset: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+  }
+  #dropzone.hidden { display: none; }
+
+  #splash {
+    position: fixed; inset: 0; z-index: 25;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, #171c24 0%, var(--bg) 70%);
+    text-align: center; padding: 24px;
+  }
+  #splash.hidden { display: none; }
+  #splash .emoji { font-size: 2.6rem; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  #splash h1 { font-size: 1.5rem; margin: 0 0 6px; letter-spacing: 0.3px; }
+  #splash p.tagline { color: var(--muted); font-size: 0.85rem; margin: 0 0 26px; max-width: 320px; }
+  #splash .spinner {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 3px solid rgba(255,105,180,0.25); border-top-color: var(--accent);
+    animation: spin 0.9s linear infinite; margin-bottom: 14px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #splash .status-txt { color: var(--muted); font-size: 0.78rem; min-height: 16px; }
+  #splash.fade-out { animation: fadeOut 0.5s ease forwards; }
+  @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+  .card {
+    background: var(--panel); border: 1px solid rgba(128,128,128,0.25);
+    border-radius: 14px; padding: 28px; max-width: 460px; width: 90%;
+    text-align: center;
+  }
+  .card h1 { font-size: 1.15rem; margin: 0 0 6px; }
+  .card p { color: var(--muted); font-size: 0.88rem; line-height: 1.4; margin: 6px 0 18px; }
+  .drop-slot {
+    border: 2px dashed rgba(128,128,128,0.4); border-radius: 10px;
+    padding: 16px; margin-bottom: 12px; font-size: 0.85rem; color: var(--muted);
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .drop-slot.filled { border-color: #3ddc84; color: #3ddc84; }
+  .drop-slot.dragover { border-color: var(--accent); color: var(--accent); }
+  input[type=file] { display: none; }
+  .pick-btn {
+    display: inline-block; margin-top: 6px; padding: 6px 14px; border-radius: 20px;
+    background: rgba(128,128,128,0.15); font-size: 0.8rem; cursor: pointer;
+  }
+  #buildBtn {
+    margin-top: 8px; width: 100%; padding: 10px; border: none; border-radius: 10px;
+    background: var(--accent); color: #1a1c1f; font-weight: 600; font-size: 0.9rem;
+    cursor: pointer; opacity: 0.5; pointer-events: none;
+  }
+  #buildBtn.ready { opacity: 1; pointer-events: auto; }
+  #status { font-size: 0.78rem; color: var(--muted); margin-top: 10px; min-height: 16px; }
+
+  #titleChip {
+    position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); left: 50%;
+    transform: translateX(-50%); z-index: 10;
+    background: var(--panel); border-radius: 10px; padding: 7px 16px; text-align: center;
+    display: none; pointer-events: none;
+  }
+  #titleChip.show { display: block; }
+  #titleChip .t1 { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.02em; }
+  #titleChip .t2 { font-size: 0.65rem; color: var(--muted); margin-top: 1px; }
+
+  #sidebar {
+    position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); left: 14px; z-index: 10;
+    background: var(--panel); border-radius: 12px; padding: 12px; font-size: 0.75rem;
+    width: 230px; max-width: 70vw; max-height: 66vh; overflow-y: auto;
+    display: none;
+  }
+  #sidebar.show { display: block; }
+  #sidebarHeader { margin-bottom: 8px; }
+  #sidebarHeader .title { font-weight: 700; font-size: 0.85rem; }
+  #sidebarHeader .subtitle { color: var(--muted); font-size: 0.68rem; margin-top: 2px; }
+
+  /* --- Solo en pantallas angostas (celular): la sidebar tapaba toda la vista y el mapa
+     quedaba sin tocar. Acá y solo acá la volvemos colapsable; en desktop esta regla
+     ni siquiera se evalúa. --- */
+  @media (max-width: 700px) {
+    #sidebar {
+      width: auto; max-width: 62vw; max-height: 46px; overflow: hidden;
+      transition: max-height 0.25s ease; cursor: pointer;
+    }
+    #sidebar.expanded { max-height: 60vh; overflow-y: auto; }
+    #sidebarHeader::after { content: '▾ tocar para ver cultivos'; display: block; font-size: 0.62rem; color: var(--muted); margin-top: 2px; }
+    #sidebar.expanded #sidebarHeader::after { content: '▴ tocar para cerrar'; }
+  }
+  .crop-row {
+    display: flex; align-items: flex-start; gap: 7px; padding: 6px 5px; border-radius: 8px;
+    cursor: pointer; transition: background 0.15s; border: 1px solid transparent;
+  }
+  .crop-row:hover { background: rgba(128,128,128,0.12); }
+  .crop-row.active { background: rgba(128,128,128,0.16); border-color: rgba(128,128,128,0.35); }
+  .crop-row span.sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-top: 3px; flex-shrink: 0; }
+  .crop-row-main { flex: 1; min-width: 0; }
+  .crop-row-top { display: flex; justify-content: space-between; gap: 6px; }
+  .crop-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .crop-value { color: var(--muted); white-space: nowrap; font-size: 0.7rem; }
+  .crop-bar-track { height: 4px; border-radius: 2px; background: rgba(128,128,128,0.18); margin-top: 4px; overflow: hidden; }
+  .crop-bar-fill { height: 100%; border-radius: 2px; }
+  .crop-row-all { margin-bottom: 6px; padding-bottom: 8px; border-bottom: 1px solid rgba(128,128,128,0.25); }
+  .crop-row-all .crop-name { font-weight: 600; }
+  .crop-row-all span.sw { border-radius: 50%; }
+
+  #yearToggle { display: none; gap: 6px; margin-bottom: 10px; }
+  #yearToggle .year-btn {
+    flex: 1; padding: 6px 0; border-radius: 8px; border: 1px solid rgba(128,128,128,0.35);
+    background: transparent; color: var(--text); font-size: 0.72rem; cursor: pointer; font-family: inherit;
+  }
+  #yearToggle .year-btn.active { background: var(--accent); color: #1a1c1f; border-color: var(--accent); font-weight: 600; }
+
+  #compareToggleBtn {
+    display: none; cursor: pointer; margin-bottom: 10px; padding: 7px 10px; border-radius: 8px;
+    background: rgba(128,128,128,0.14); font-size: 0.72rem; text-align: center; font-weight: 600;
+  }
+  #compareToggleBtn:hover { background: rgba(128,128,128,0.24); }
+  #compareToggleBtn.show { display: block; }
+
+  #info {
+    position: fixed; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 50%;
+    transform: translateX(-50%); z-index: 10;
+    background: var(--panel); border-radius: 12px; padding: 12px 18px;
+    font-size: 0.85rem; display: none; text-align: left; max-width: 92vw;
+  }
+  #info.show { display: block; }
+  #info .info-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 6px; }
+  #info .info-stats { display: flex; gap: 18px; flex-wrap: wrap; }
+  #info .stat { display: flex; flex-direction: column; }
+  #info .stat-label { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  #info .stat-value { font-size: 0.95rem; font-weight: 600; }
+
+  #cropInfoPanel {
+    position: fixed; left: 14px; bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    z-index: 12; background: var(--panel); border-radius: 12px; padding: 14px;
+    max-width: 260px; display: none; box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+  }
+  #cropInfoPanel.show { display: block; }
+  #cropInfoPanel img { width: 100%; max-height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; display: block; }
+  #cropInfoPanel h3 { margin: 0 0 6px; font-size: 0.92rem; }
+  #cropInfoPanel p { margin: 0 0 8px; font-size: 0.76rem; color: var(--muted); line-height: 1.45; }
+  #cropInfoPanel .crop-products-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  #cropInfoPanel .crop-products { display: flex; flex-wrap: wrap; gap: 5px; }
+  #cropInfoPanel .crop-products span { background: rgba(255,105,180,0.15); border: 1px solid rgba(255,105,180,0.35); color: var(--text); font-size: 0.68rem; padding: 3px 8px; border-radius: 20px; }
+  @media (max-width: 700px) {
+    #cropInfoPanel { max-width: 54vw; font-size: 0.9em; }
+  }
+
+  #reliefControl {
+    position: fixed; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 10;
+    background: var(--panel); border-radius: 10px; padding: 8px 12px; font-size: 0.72rem;
+    color: var(--muted); display: none;
+  }
+  #reliefControl.show { display: block; }
+  #reliefControl label { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+  #reliefControl input[type=range] { width: 130px; }
+
+  #tutorial {
+    position: fixed; inset: 0; z-index: 25;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.5);
+  }
+  #tutorial.show { display: flex; }
+  #tutorial .card { max-width: 380px; text-align: left; }
+  #tutorial .card h1 { text-align: center; }
+  #tutorial .step { display: flex; gap: 10px; margin: 10px 0; align-items: flex-start; }
+  #tutorial .step .emoji { font-size: 1.2rem; }
+  #tutorial .step b { display: block; font-size: 0.85rem; }
+  #tutorial .step span.desc { font-size: 0.78rem; color: var(--muted); }
+  #tutorial button { margin-top: 4px; }
+  #tutorialCloseBtn {
+    width: 100%; padding: 10px; border: none; border-radius: 10px;
+    background: var(--accent); color: #1a1c1f; font-weight: 600; font-size: 0.9rem; cursor: pointer;
+  }
+
+  #tooltip {
+    position: fixed; z-index: 15; pointer-events: none;
+    background: var(--panel); border-radius: 8px; padding: 6px 10px;
+    font-size: 0.8rem; display: none; white-space: nowrap;
+    transform: translate(14px, -50%);
+  }
+  #tooltip.show { display: block; }
+  #tooltip b { color: var(--accent); }
+
+  #rightStack {
+    position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); right: 14px; z-index: 10;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 300px;
+  }
+  #hint {
+    background: var(--panel); border-radius: 10px; padding: 8px 12px; font-size: 0.72rem;
+    color: var(--muted); display: none;
+  }
+  #hint.show { display: block; }
+
+  #comparePanel {
+    display: none; background: var(--panel); border-radius: 12px; padding: 12px;
+    font-size: 0.75rem; width: 280px; max-width: 78vw; max-height: 60vh; overflow-y: auto;
+  }
+  #comparePanel.show { display: block; }
+  #comparePanel .cmp-total { font-weight: 700; margin-bottom: 2px; }
+  #comparePanel .cmp-total-sub { color: var(--muted); margin-bottom: 12px; font-size: 0.7rem; }
+  #comparePanel .cmp-row { margin-bottom: 12px; }
+  #comparePanel .cmp-row-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  #comparePanel .cmp-name { font-weight: 600; display: flex; align-items: center; gap: 5px; }
+  #comparePanel .cmp-name .sw { width: 8px; height: 8px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+  #comparePanel .cmp-delta { font-weight: 600; white-space: nowrap; font-size: 0.7rem; }
+  #comparePanel .cmp-bar-line { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 0.68rem; color: var(--muted); }
+  #comparePanel .cmp-bar-year { width: 36px; flex-shrink: 0; }
+  #comparePanel .cmp-bar-track { flex: 1; height: 6px; border-radius: 3px; background: rgba(128,128,128,0.15); overflow: hidden; }
+  #comparePanel .cmp-bar-fill { height: 100%; }
+  #comparePanel .cmp-bar-value { width: 62px; text-align: right; flex-shrink: 0; color: var(--text); }
+  #comparePanel .cmp-donuts { display: flex; gap: 10px; }
+  #comparePanel .cmp-donuts-top { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(128,128,128,0.2); }
+  #comparePanel .cmp-donut-box { flex: 1; text-align: center; min-width: 0; }
+  #comparePanel .cmp-donut-title { font-size: 0.68rem; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+  #comparePanel .cmp-donut-box canvas { max-width: 100%; }
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="emoji">🌎</div>
+  <h1>El Pulso de Burruyacú</h1>
+  <p class="tagline">Territorio agrícola visto desde el espacio — relieve, cultivos y su evolución en el tiempo.</p>
+  <div class="spinner"></div>
+  <div class="status-txt" id="statusSplash">Cargando datos del territorio...</div>
+</div>
+
+<div id="dropzone" class="hidden">
+  <div class="card">
+    <h1>Prototipo 3D · Burruyacú</h1>
+    <p>Cargá tus archivos GeoTIFF (mismo ROI). Todo se procesa en tu navegador, no se sube a ningún servidor.</p>
+
+    <div class="drop-slot" id="slotDem" data-kind="dem">
+      <div class="slot-msg">DEM (elevación) — arrastrá el .tif o
+        <label class="pick-btn">elegir archivo<input type="file" id="fileDem" accept=".tif,.tiff"></label>
+      </div>
+    </div>
+    <div class="drop-slot" id="slotClasif" data-kind="clasif">
+      <div class="slot-msg">Clasificación de cultivos — arrastrá el .tif o
+        <label class="pick-btn">elegir archivo<input type="file" id="fileClasif" accept=".tif,.tiff"></label>
+      </div>
+    </div>
+    <div class="drop-slot" id="slotAreas" data-kind="areas">
+      Superficie por clase (opcional, el .json que exportás del script) — arrastrá el .json o
+      <label class="pick-btn">elegir archivo<input type="file" id="fileAreas" accept=".json"></label>
+    </div>
+
+    <p style="margin:16px 0 10px;text-align:left;font-size:0.78rem;">🕐 Comparación con un año histórico (opcional)</p>
+
+    <div class="drop-slot" id="slotClasifHist" data-kind="clasifHist">
+      <div class="slot-msg">Clasificación de otro año (mismo ROI) — arrastrá el .tif o
+        <label class="pick-btn">elegir archivo<input type="file" id="fileClasifHist" accept=".tif,.tiff"></label>
+      </div>
+      <div style="margin-top:8px;text-align:left;">
+        <label style="font-size:0.72rem;">Año de esa clasificación:
+          <input type="text" id="anioHistInput" value="2018" maxlength="4"
+                 style="width:56px;margin-left:6px;padding:3px 6px;border-radius:6px;border:1px solid rgba(128,128,128,0.35);background:transparent;color:inherit;font-family:inherit;">
+        </label>
+      </div>
+    </div>
+    <div class="drop-slot" id="slotAreasHist" data-kind="areasHist">
+      Superficie por clase de ese año (opcional) — arrastrá el .json o
+      <label class="pick-btn">elegir archivo<input type="file" id="fileAreasHist" accept=".json"></label>
+    </div>
+
+    <button id="buildBtn">Construir terreno 3D</button>
+    <div id="status"></div>
+  </div>
+</div>
+
+<div id="canvas-wrap"></div>
+<div id="titleChip">
+  <div class="t1">🌎 El Pulso de Burruyacú</div>
+  <div class="t2">Explorá la estructura agrícola del territorio</div>
+</div>
+<div id="sidebar">
+  <div id="sidebarHeader" onclick="if(window.innerWidth<=700){document.getElementById('sidebar').classList.toggle('expanded')}">
+    <div class="title">Cultivos</div>
+    <div class="subtitle">Tocá un cultivo para resaltarlo · "Ver todos" para volver</div>
+  </div>
+  <div id="yearToggle"></div>
+  <div id="compareToggleBtn"></div>
+  <div id="cropList"></div>
+</div>
+<div id="reliefControl">
+  <label>Relieve <span id="reliefValue">1.0x</span></label>
+  <input type="range" id="reliefRange" min="1" max="3" step="0.1" value="1">
+</div>
+<div id="rightStack">
+  <div id="hint" style="cursor:pointer" onclick="document.getElementById('tutorial').classList.add('show')" title="Ver el tutorial de nuevo">Arrastrá para rotar · rueda para zoom · pasá el mouse para identificar el cultivo · hacé click para marcar el punto y ver la superficie · (tocá acá para ver la ayuda)</div>
+  <div id="comparePanel"></div>
+</div>
+<div id="info"></div>
+<div id="cropInfoPanel"></div>
+<div id="tooltip"></div>
+
+<div id="tutorial">
+  <div class="card">
+    <h1>Explorá Burruyacú</h1>
+    <div class="step"><span class="emoji">🖱️</span><div><b>1. Rotá el territorio</b><span class="desc">Arrastrá para cambiar la perspectiva, rueda para hacer zoom.</span></div></div>
+    <div class="step"><span class="emoji">🌱</span><div><b>2. Elegí un cultivo</b><span class="desc">Usá la lista de la izquierda para resaltarlo en el terreno 3D.</span></div></div>
+    <div class="step"><span class="emoji">📍</span><div><b>3. Hacé click</b><span class="desc">Descubrí la superficie y la elevación de un punto exacto.</span></div></div>
+    <div class="step"><span class="emoji">⛰️</span><div><b>4. Ajustá el relieve</b><span class="desc">Con el control de abajo a la derecha, exagerá el terreno hasta 3x.</span></div></div>
+    <button id="tutorialCloseBtn" style="margin-top:14px;" onclick="document.getElementById('tutorial').classList.remove('show')">Entendido</button>
+  </div>
+</div>
+
+<script>
+const CLASES = {
+  1: ["Caña de azúcar", "#FF69B4"], 2: ["Citrus", "#FFA500"], 3: ["Maíz", "#FFFF00"],
+  4: ["Monte nativo", "#228B22"], 5: ["Pasturas", "#90EE90"], 6: ["Soja", "#8A2BE2"],
+  7: ["Sorgo", "#FF4500"], 8: ["Barbecho", "#D2B48C"]
+};
+const MESH_GRID = 200;   // resolución de la malla (elevación) - más alto = terreno más suave, más lento
+const TEX_SIZE  = 1024;  // resolución de la textura de color - más alto = bordes de parcela más nítidos
+
+let filesLoaded = { dem: null, clasif: null, clasifHist: null };
+let areasPorClase = null; // { "1": 1234.5, "2": 88.0, ... } superficie total en hectáreas del año actual
+let areasPorClaseHist = null; // idem, pero del año histórico que se compara (si se cargó)
+
+function setStatus(msg) {
+  const el = document.getElementById('status');
+  const elSplash = document.getElementById('statusSplash');
+  if (el) el.textContent = msg;
+  if (elSplash) elSplash.textContent = msg;
+}
+
+const KIND_LABELS = { dem: 'DEM: ', clasif: 'Clasificación: ', clasifHist: 'Clasificación histórica: ' };
+
+function wireSlot(slotId, inputId, kind) {
+  const slot = document.getElementById(slotId);
+  const input = document.getElementById(inputId);
+  const mark = (file) => {
+    filesLoaded[kind] = file;
+    slot.classList.add('filled');
+    const msgEl = slot.querySelector('.slot-msg') || slot; // .slot-msg preserva controles anidados (ej. el input de año)
+    msgEl.textContent = KIND_LABELS[kind] + file.name;
+    checkReady();
+  };
+  input.addEventListener('change', e => { if (e.target.files[0]) mark(e.target.files[0]); });
+  slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('dragover'); });
+  slot.addEventListener('dragleave', () => slot.classList.remove('dragover'));
+  slot.addEventListener('drop', e => {
+    e.preventDefault(); slot.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) mark(e.dataTransfer.files[0]);
+  });
+}
+wireSlot('slotDem', 'fileDem', 'dem');
+wireSlot('slotClasif', 'fileClasif', 'clasif');
+wireSlot('slotClasifHist', 'fileClasifHist', 'clasifHist');
+
+// El slot de superficies no guarda el archivo para más tarde: lo lee y parsea al toque,
+// porque es un JSON chiquito (no un GeoTIFF) y no hace falta esperar a "Construir terreno 3D".
+// setter recibe el objeto parseado (o null si falla) y decide dónde guardarlo (actual o histórico).
+function wireAreasSlot(slotId, inputId, label, setter) {
+  const slot = document.getElementById(slotId);
+  const input = document.getElementById(inputId);
+  const load = async (file) => {
+    try {
+      const text = await file.text();
+      setter(JSON.parse(text));
+      slot.classList.add('filled');
+      slot.textContent = label + file.name;
+    } catch (err) {
+      setter(null);
+      slot.classList.remove('filled');
+      slot.textContent = 'No se pudo leer ese JSON: ' + err.message;
+    }
+  };
+  input.addEventListener('change', e => { if (e.target.files[0]) load(e.target.files[0]); });
+  slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('dragover'); });
+  slot.addEventListener('dragleave', () => slot.classList.remove('dragover'));
+  slot.addEventListener('drop', e => {
+    e.preventDefault(); slot.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) load(e.dataTransfer.files[0]);
+  });
+}
+wireAreasSlot('slotAreas', 'fileAreas', 'Superficies: ', (v) => { areasPorClase = v; });
+wireAreasSlot('slotAreasHist', 'fileAreasHist', 'Superficies históricas: ', (v) => { areasPorClaseHist = v; });
+
+// Formatea hectáreas al estilo es-AR (punto de miles, coma decimal): 1.234,5 ha
+function formatHa(valor) {
+  return Number(valor).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + ' ha';
+}
+
+function checkReady() {
+  const btn = document.getElementById('buildBtn');
+  if (filesLoaded.dem && filesLoaded.clasif) btn.classList.add('ready');
+}
+
+// Acepta tanto un File (arrastrado por el usuario) como una URL relativa del propio sitio
+// (usado por la auto-carga, para traer los archivos que ya viven en el repo).
+async function getArrayBuffer(source) {
+  if (source instanceof File) return await source.arrayBuffer();
+  const resp = await fetch(source);
+  if (!resp.ok) throw new Error('No se encontró ' + source + ' (HTTP ' + resp.status + ')');
+  return await resp.arrayBuffer();
+}
+
+async function readTiffFull(source) {
+  const buf = await getArrayBuffer(source);
+  const tiff = await GeoTIFF.fromArrayBuffer(buf);
+  const image = await tiff.getImage();
+  const rasters = await image.readRasters(); // resolución nativa, todas las bandas, sin remuestreo de la librería
+  return { rasters, width: image.getWidth(), height: image.getHeight() };
+}
+
+// Vecino más cercano estricto: SIEMPRE toma un único píxel de origen, nunca promedia.
+// Es obligatorio para códigos de clase discretos (si se promedia, un citrus junto a un
+// maíz puede dar un valor intermedio que redondea a la clase equivocada).
+function sampleNearest(srcArr, srcW, srcH, dstN) {
+  const out = new Float32Array(dstN * dstN);
+  for (let y = 0; y < dstN; y++) {
+    const sy = Math.min(srcH - 1, Math.floor((y / dstN) * srcH));
+    for (let x = 0; x < dstN; x++) {
+      const sx = Math.min(srcW - 1, Math.floor((x / dstN) * srcW));
+      out[y * dstN + x] = srcArr[sy * srcW + sx];
+    }
+  }
+  return out;
+}
+
+// Bilineal: solo para datos continuos (elevación), donde mezclar vecinos sí es correcto y deseable.
+function sampleBilinear(srcArr, srcW, srcH, dstN) {
+  const out = new Float32Array(dstN * dstN);
+  for (let y = 0; y < dstN; y++) {
+    const fy = (y / (dstN - 1)) * (srcH - 1);
+    const y0 = Math.floor(fy), y1 = Math.min(srcH - 1, y0 + 1), ty = fy - y0;
+    for (let x = 0; x < dstN; x++) {
+      const fx = (x / (dstN - 1)) * (srcW - 1);
+      const x0 = Math.floor(fx), x1 = Math.min(srcW - 1, x0 + 1), tx = fx - x0;
+      const v00 = srcArr[y0 * srcW + x0], v10 = srcArr[y0 * srcW + x1];
+      const v01 = srcArr[y1 * srcW + x0], v11 = srcArr[y1 * srcW + x1];
+      const top = v00 + (v10 - v00) * tx;
+      const bot = v01 + (v11 - v01) * tx;
+      out[y * dstN + x] = top + (bot - top) * ty;
+    }
+  }
+  return out;
+}
+
+function hexToRgb255(hex) {
+  const v = parseInt(hex.slice(1), 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
+
+// Construye la TEXTURA de color: un píxel = un color exacto, sin ninguna mezcla.
+// Esto reemplaza al color-por-vértice, que era la causa real del "borroso".
+function buildColorTexture(clasifFull) {
+  const clasifTex = sampleNearest(clasifFull.rasters[0], clasifFull.width, clasifFull.height, TEX_SIZE);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = TEX_SIZE; canvas.height = TEX_SIZE;
+  const ctx = canvas.getContext('2d');
+  const img = ctx.createImageData(TEX_SIZE, TEX_SIZE);
+
+  for (let i = 0; i < TEX_SIZE * TEX_SIZE; i++) {
+    const clase = Math.round(clasifTex[i]);
+    const info = CLASES[clase];
+    let r, g, b;
+    if (info) {
+      [r, g, b] = hexToRgb255(info[1]);
+    } else {
+      r = 90; g = 90; b = 97; // gris neutro para píxeles sin clasificar (ciudades, rutas, ríos, nubes)
+    }
+    const p = i * 4;
+    img.data[p] = r; img.data[p + 1] = g; img.data[p + 2] = b; img.data[p + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+
+  // Copia de los colores "originales" (sin resaltar ningún cultivo), para poder
+  // volver a pintarlos rápido cada vez que el usuario cambia de cultivo seleccionado.
+  const baseColors = new Uint8ClampedArray(img.data);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  // CLAVE: sin esto, la GPU vuelve a mezclar colores vecinos al escalar la textura.
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  texture.needsUpdate = true;
+  return {
+    texture,
+    canvas,
+    ctx,
+    baseColors,
+    clasifTex, // clase por píxel a resolución TEX_SIZE (para resaltar en la textura)
+    clasifLookup: sampleNearest(clasifFull.rasters[0], clasifFull.width, clasifFull.height, MESH_GRID)
+  };
+}
+
+// Todo lo que antes pasaba solo al clickear el botón, ahora es una función reutilizable
+// que se puede llamar con Files (modo manual, arrastrado) o con URLs relativas (auto-carga).
+async function construirEscena(demSource, clasifSource, clasifHistSource, anioHistManual) {
+  try {
+    setStatus('Leyendo DEM...');
+    const demFull = await readTiffFull(demSource);
+    const demGrid = sampleBilinear(demFull.rasters[0], demFull.width, demFull.height, MESH_GRID);
+
+    setStatus('Leyendo clasificación...');
+    const clasifFull = await readTiffFull(clasifSource);
+
+    setStatus('Pintando textura de colores...');
+    const { texture, canvas, ctx, baseColors, clasifTex, clasifLookup } = buildColorTexture(clasifFull);
+
+    let histBundle = null;
+    if (clasifHistSource) {
+      setStatus('Leyendo clasificación histórica...');
+      const clasifHistFull = await readTiffFull(clasifHistSource);
+      setStatus('Pintando textura histórica...');
+      const b = buildColorTexture(clasifHistFull);
+      const anioHist = anioHistManual || (document.getElementById('anioHistInput').value || '').trim() || 'Histórico';
+      histBundle = { texture: b.texture, texInfo: { canvas: b.canvas, ctx: b.ctx, baseColors: b.baseColors, clasifTex: b.clasifTex }, clasifLookup: b.clasifLookup, anio: anioHist };
+    }
+
+    setStatus('Construyendo malla 3D...');
+    const aspect = demFull.height / demFull.width; // para no deformar el terreno si el ROI no es cuadrado
+    buildScene(demGrid, clasifLookup, texture, MESH_GRID, aspect, { canvas, ctx, baseColors, clasifTex }, histBundle);
+
+    document.getElementById('dropzone').classList.add('hidden');
+    const splashEl = document.getElementById('splash');
+    if (splashEl) { splashEl.classList.add('fade-out'); setTimeout(() => splashEl.classList.add('hidden'), 550); }
+    document.getElementById('sidebar').classList.add('show');
+    document.getElementById('titleChip').classList.add('show');
+    document.getElementById('reliefControl').classList.add('show');
+    document.getElementById('hint').classList.add('show');
+    let tutorialYaVisto = false;
+    try { tutorialYaVisto = localStorage.getItem('burruyacu_tutorial_visto') === '1'; } catch (e) {}
+    if (!tutorialYaVisto) {
+      document.getElementById('tutorial').classList.add('show');
+      try { localStorage.setItem('burruyacu_tutorial_visto', '1'); } catch (e) {}
+    }
+  } catch (err) {
+    console.error(err);
+    setStatus('Error: ' + err.message + ' (revisá que sean GeoTIFF válidos)');
+  }
+}
+
+document.getElementById('buildBtn').addEventListener('click', () => {
+  construirEscena(filesLoaded.dem, filesLoaded.clasif, filesLoaded.clasifHist, null);
+});
+
+// ================== AUTO-CARGA ==================
+// Si estos archivos existen junto al index.html (subidos a una carpeta "data/" del mismo
+// repo), la página los busca sola al abrirse y salta directo al 3D, sin pantalla de carga.
+// Cambiá los nombres de acá por los tuyos. Si alguno no aparece en esa ruta, la app
+// simplemente vuelve al modo manual (arrastrar y soltar), sin romperse ni mostrar error.
+const DATA_SOURCES = {
+  dem: 'data/dem_burruyacu.tif',
+  clasif: 'data/clasificacion_limpia_multiclase_v4.tif',
+  areas: 'data/areas_por_clase.json',
+  clasifHist: 'data/clasificacion_limpia_2018_v2.tif',
+  areasHist: 'data/areas_por_clase_2018.json',
+  anioHist: '2018'
+};
+
+async function archivoExiste(url) {
+  if (!url) return false;
+  try {
+    const r = await fetch(url, { method: 'HEAD' });
+    if (!r.ok) console.warn('[auto-carga] no encontrado:', url, '→ HTTP', r.status);
+    return r.ok;
+  } catch (e) {
+    console.warn('[auto-carga] error de red al buscar:', url, '→', e.message);
+    return false;
+  }
+}
+
+async function intentarAutoCarga() {
+  console.log('[auto-carga] buscando archivos en:', DATA_SOURCES.dem, 'y', DATA_SOURCES.clasif);
+  const [demOk, clasifOk] = await Promise.all([archivoExiste(DATA_SOURCES.dem), archivoExiste(DATA_SOURCES.clasif)]);
+  if (!demOk || !clasifOk) {
+    console.warn('[auto-carga] falta DEM o clasificación, se muestra la pantalla manual. demOk =', demOk, '| clasifOk =', clasifOk);
+    document.getElementById('splash').classList.add('hidden');
+    document.getElementById('dropzone').classList.remove('hidden');
+    return;
+  }
+  console.log('[auto-carga] DEM y clasificación encontrados, construyendo escena...');
+
+  if (DATA_SOURCES.areas) {
+    try { areasPorClase = await (await fetch(DATA_SOURCES.areas)).json(); } catch (e) { console.warn('[auto-carga] no se pudo leer', DATA_SOURCES.areas, e.message); }
+  }
+  let clasifHistSource = null;
+  if (await archivoExiste(DATA_SOURCES.clasifHist)) {
+    clasifHistSource = DATA_SOURCES.clasifHist;
+    if (DATA_SOURCES.areasHist) {
+      try { areasPorClaseHist = await (await fetch(DATA_SOURCES.areasHist)).json(); } catch (e) { console.warn('[auto-carga] no se pudo leer', DATA_SOURCES.areasHist, e.message); }
+    }
+  }
+  construirEscena(DATA_SOURCES.dem, DATA_SOURCES.clasif, clasifHistSource, DATA_SOURCES.anioHist);
+}
+intentarAutoCarga();
+
+function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, histBundleIn) {
+  let min = Infinity, max = -Infinity;
+  for (let i = 0; i < demArr.length; i++) {
+    const v = demArr[i];
+    if (v > -1000 && v < 9000) { if (v < min) min = v; if (v > max) max = v; }
+  }
+  const range = (max - min) || 1;
+
+  const planeW = 200;
+  const planeH = 200 * aspect;
+
+  const geometry = new THREE.PlaneGeometry(planeW, planeH, n - 1, n - 1);
+  geometry.rotateX(-Math.PI / 2);
+  const pos = geometry.attributes.position;
+  const heights = new Float32Array(pos.count);
+  const normArr = new Float32Array(pos.count); // altura normalizada 0..1 por vértice, para poder re-exagerar el relieve sin releer el DEM
+  const BASE_Z_SCALE = 28; // exageración vertical "1x" del slider de relieve
+  let zScale = BASE_Z_SCALE;
+
+  for (let iy = 0; iy < n; iy++) {
+    for (let ix = 0; ix < n; ix++) {
+      const idx = iy * n + ix;
+      let h = demArr[idx];
+      if (!(h > -1000 && h < 9000)) h = min;
+      const norm = (h - min) / range;
+      pos.setY(idx, norm * zScale);
+      heights[idx] = h;
+      normArr[idx] = norm;
+    }
+  }
+  geometry.computeVertexNormals();
+
+  const material = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9, metalness: 0.02 });
+  const terrain = new THREE.Mesh(geometry, material);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0e1116);
+  scene.add(terrain);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x30261c, 0.12));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.32);
+  sun.position.set(120, 160, 80);
+  scene.add(sun);
+
+  const wrap = document.getElementById('canvas-wrap');
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+  camera.position.set(0, 130, 220);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  wrap.innerHTML = '';
+  wrap.appendChild(renderer.domElement);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI / 2.05;
+
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  const infoBox = document.getElementById('info');
+  const tooltip = document.getElementById('tooltip');
+  const cropListEl = document.getElementById('cropList');
+  const yearToggleEl = document.getElementById('yearToggle');
+  const compareToggleBtnEl = document.getElementById('compareToggleBtn');
+  const comparePanelEl = document.getElementById('comparePanel');
+
+  // ---- Año activo (Actual vs Histórico) ----
+  // clasifLookup/texture/texInfo llegan como parámetros de buildScene: son bindings mutables,
+  // así que activarAnio() simplemente les reasigna el paquete del año que corresponda.
+  const actualBundle = { clasifLookup, texture, texInfo, anio: 'Actual' };
+  const histBundle = histBundleIn; // null si no se cargó clasificación histórica
+  let anioActivo = 'actual'; // 'actual' | 'hist'
+
+  function areasActivas() {
+    return anioActivo === 'hist' ? areasPorClaseHist : areasPorClase;
+  }
+
+  // ---- Comparación de superficies entre años (usa los JSON que ya se cargan; nada nuevo que exportar) ----
+  function setupCompareToggle() {
+    if (!histBundle) { compareToggleBtnEl.classList.remove('show'); comparePanelEl.classList.remove('show'); return; }
+    compareToggleBtnEl.classList.add('show');
+    compareToggleBtnEl.textContent = `📊 Comparar ${histBundle.anio} vs ${actualBundle.anio}`;
+    compareToggleBtnEl.onclick = () => {
+      const abierto = comparePanelEl.classList.toggle('show');
+      if (abierto) buildComparePanel();
+    };
+  }
+
+  let donutA = null, donutB = null; // instancias de Chart.js, se destruyen y recrean cada vez que se abre el panel
+  function destruirDonuts() {
+    if (donutA) { donutA.destroy(); donutA = null; }
+    if (donutB) { donutB.destroy(); donutB = null; }
+  }
+
+  function datosDonut(areas) {
+    const labels = [], data = [], colors = [];
+    Object.keys(CLASES).forEach(k => {
+      const clase = Number(k);
+      const valor = Number((areas && areas[String(clase)]) || 0);
+      if (valor <= 0) return; // no mostrar porciones vacías en la dona
+      const [nombre, color] = CLASES[clase];
+      labels.push(nombre); data.push(valor); colors.push(color);
+    });
+    return { labels, data, colors };
+  }
+
+  function crearDonut(canvasId, areas) {
+    const { labels, data, colors } = datosDonut(areas);
+    const ctx2d = document.getElementById(canvasId).getContext('2d');
+    return new Chart(ctx2d, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: '#0e1116', borderWidth: 1 }] },
+      options: {
+        responsive: true,
+        cutout: '58%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (item) => `${item.label}: ${formatHa(item.raw)}`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function buildComparePanel() {
+    destruirDonuts();
+    if (!areasPorClase || !areasPorClaseHist) {
+      comparePanelEl.innerHTML = `<div style="color:var(--muted)">Para esta comparación hacen falta los dos archivos de superficie (el actual y el de ${histBundle.anio}). Arrastralos en la pantalla inicial y volvé a construir el terreno.</div>`;
+      return;
+    }
+    const anioA = histBundle.anio, anioB = actualBundle.anio; // A = año viejo, B = año nuevo
+    const totalA = Object.values(areasPorClaseHist).reduce((a, b) => a + Number(b), 0);
+    const totalB = Object.values(areasPorClase).reduce((a, b) => a + Number(b), 0);
+    const deltaTotalPct = totalA ? ((totalB - totalA) / totalA * 100) : null;
+    const colorDelta = (d) => d >= 0 ? '#3ddc84' : '#ff6b6b';
+
+    let html = `<div class="cmp-total">Superficie agrícola clasificada</div>
+      <div class="cmp-total-sub">${formatHa(totalA)} (${anioA}) → ${formatHa(totalB)} (${anioB})
+        ${deltaTotalPct !== null ? ` · <b style="color:${colorDelta(deltaTotalPct)}">${deltaTotalPct >= 0 ? '+' : ''}${deltaTotalPct.toFixed(1).replace('.', ',')}%</b>` : ''}
+      </div>`;
+
+    // Dos donas lado a lado: la composición completa del territorio en cada año, de un vistazo.
+    // Van primero (arriba de las barras) para dar la foto general antes del detalle por cultivo.
+    html += `
+      <div class="cmp-donuts cmp-donuts-top">
+        <div class="cmp-donut-box"><div class="cmp-donut-title">${anioA}</div><canvas id="donutCanvasA" width="120" height="120"></canvas></div>
+        <div class="cmp-donut-box"><div class="cmp-donut-title">${anioB}</div><canvas id="donutCanvasB" width="120" height="120"></canvas></div>
+      </div>`;
+
+    Object.keys(CLASES).forEach(k => {
+      const clase = Number(k);
+      const [nombre, color] = CLASES[clase];
+      const a = Number(areasPorClaseHist[String(clase)] || 0);
+      const b = Number(areasPorClase[String(clase)] || 0);
+      if (a === 0 && b === 0) return; // esa clase no aparece en ninguno de los dos años: no mostrar fila vacía
+      const max = Math.max(a, b, 1);
+      const delta = b - a;
+      const deltaPct = a ? (delta / a * 100) : null;
+      html += `
+        <div class="cmp-row">
+          <div class="cmp-row-top">
+            <span class="cmp-name"><span class="sw" style="background:${color}"></span>${nombre}</span>
+            <span class="cmp-delta" style="color:${colorDelta(delta)}">${delta >= 0 ? '+' : ''}${formatHa(delta)}${deltaPct !== null ? ` (${delta >= 0 ? '+' : ''}${deltaPct.toFixed(0)}%)` : ''}</span>
+          </div>
+          <div class="cmp-bar-line">
+            <span class="cmp-bar-year">${anioA}</span>
+            <div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:${a / max * 100}%;background:${color};opacity:0.5"></div></div>
+            <span class="cmp-bar-value">${formatHa(a)}</span>
+          </div>
+          <div class="cmp-bar-line">
+            <span class="cmp-bar-year">${anioB}</span>
+            <div class="cmp-bar-track"><div class="cmp-bar-fill" style="width:${b / max * 100}%;background:${color}"></div></div>
+            <span class="cmp-bar-value">${formatHa(b)}</span>
+          </div>
+        </div>`;
+    });
+
+    comparePanelEl.innerHTML = html;
+    donutA = crearDonut('donutCanvasA', areasPorClaseHist);
+    donutB = crearDonut('donutCanvasB', areasPorClase);
+  }
+
+  function buildYearToggle() {
+    if (!histBundle) { yearToggleEl.style.display = 'none'; return; }
+    yearToggleEl.style.display = 'flex';
+    yearToggleEl.innerHTML = `
+      <button class="year-btn ${anioActivo === 'actual' ? 'active' : ''}" data-year="actual">${actualBundle.anio}</button>
+      <button class="year-btn ${anioActivo === 'hist' ? 'active' : ''}" data-year="hist">${histBundle.anio}</button>`;
+    yearToggleEl.querySelectorAll('.year-btn').forEach(btn => {
+      btn.addEventListener('click', () => activarAnio(btn.dataset.year));
+    });
+  }
+
+  // Cambia qué clasificación/textura está activa. La malla (DEM) es la misma para los dos años:
+  // solo cambia qué colorea el terreno y qué clase identifica pickAt().
+  function activarAnio(cual) {
+    if (cual === anioActivo) return;
+    anioActivo = cual;
+    const b = cual === 'hist' ? histBundle : actualBundle;
+    clasifLookup = b.clasifLookup;
+    texInfo = b.texInfo;
+    texture = b.texture;
+    terrain.material.map = texture;
+    terrain.material.needsUpdate = true;
+    buildYearToggle();
+    buildCropSidebar();
+    setHighlight(selectedClase);
+    // Un click puntual (palito + elevación + foto) quedó atado a la clasificación del año anterior: lo limpiamos.
+    if (marcador) { scene.remove(marcador); marcador = null; }
+    clearCropImage();
+    if (selectedClase !== null) renderCard(selectedClase);
+  }
+
+  // ---- Resaltado por cultivo: re-pinta la textura, no la geometría ----
+  // Igual que buildColorTexture, un píxel = una clase exacta, cero mezcla.
+  let selectedClase = null;
+  const workBuffer = new Uint8ClampedArray(texInfo.baseColors.length);
+  function setHighlight(clase) {
+    const base = texInfo.baseColors;
+    const clasifTex = texInfo.clasifTex;
+    if (clase === null) {
+      workBuffer.set(base);
+    } else {
+      for (let i = 0, p = 0; i < clasifTex.length; i++, p += 4) {
+        if (Math.round(clasifTex[i]) === clase) {
+          workBuffer[p] = base[p]; workBuffer[p + 1] = base[p + 1]; workBuffer[p + 2] = base[p + 2]; workBuffer[p + 3] = 255;
+        } else {
+          // Lo que no es la clase elegida se apaga a gris oscuro para que resalte lo seleccionado.
+          const gris = (0.299 * base[p] + 0.587 * base[p + 1] + 0.114 * base[p + 2]) * 0.35;
+          workBuffer[p] = gris; workBuffer[p + 1] = gris; workBuffer[p + 2] = gris; workBuffer[p + 3] = 255;
+        }
+      }
+    }
+    texInfo.ctx.putImageData(new ImageData(workBuffer, TEX_SIZE, TEX_SIZE), 0, 0);
+    texture.needsUpdate = true;
+  }
+
+  function areaTotal() {
+    const areas = areasActivas();
+    if (!areas) return null;
+    return Object.values(areas).reduce((a, b) => a + Number(b), 0);
+  }
+
+  // Arma la tarjeta de abajo. elevM es opcional: solo viene cuando el origen fue un click en el terreno
+  // (y solo tiene sentido para el año Actual, porque la elevación puntual no depende del año).
+  function renderCard(clase, elevM) {
+    const info = CLASES[clase];
+    if (!info) { infoBox.classList.remove('show'); return; }
+    const [nombre, color] = info;
+    const areas = areasActivas();
+    const areaHa = areas ? areas[String(clase)] : undefined;
+    const total = areaTotal();
+    const pct = (areaHa !== undefined && total) ? (Number(areaHa) / total * 100) : null;
+    const etiquetaAnio = histBundle ? ` <span style="font-weight:400;font-size:0.68rem;color:var(--muted)">· ${anioActivo === 'hist' ? histBundle.anio : actualBundle.anio}</span>` : '';
+
+    let html = `<div class="info-title" style="color:${color}">${nombre}${etiquetaAnio}</div><div class="info-stats">`;
+    html += `<div class="stat"><span class="stat-label">Superficie</span><span class="stat-value">${
+      areaHa !== undefined ? formatHa(areaHa) : '<span style="opacity:.6;font-weight:400">cargá el JSON</span>'
+    }</span></div>`;
+    if (pct !== null) {
+      html += `<div class="stat"><span class="stat-label">Participación</span><span class="stat-value">${pct.toFixed(1).replace('.', ',')} %</span></div>`;
+    }
+    if (elevM !== undefined) {
+      html += `<div class="stat"><span class="stat-label">Elevación del punto</span><span class="stat-value">${elevM.toFixed(0)} m</span></div>`;
+    }
+    html += `</div>`;
+    infoBox.innerHTML = html;
+    infoBox.classList.add('show');
+  }
+
+  function updateSidebarActive() {
+    cropListEl.querySelectorAll('.crop-row').forEach(el => {
+      const esTodos = el.dataset.clase === 'all';
+      el.classList.toggle('active', esTodos ? selectedClase === null : Number(el.dataset.clase) === selectedClase);
+    });
+  }
+
+  // Punto único de entrada para "elegir un cultivo", venga del click en el 3D o de la sidebar.
+  // elevM solo se pasa desde el click en el terreno (ahí sí hay un punto concreto con altura).
+  // Ficha de cultivo: imagen + texto explicativo, aparece junto a la tarjeta de estadísticas
+  // cuando se selecciona un cultivo (tocando el terreno o eligiéndolo en la lista lateral).
+  // Para sumar los demás cultivos: agregá una entrada más al objeto, con la misma forma que
+  // la de caña, y subí la imagen a /img/ en el repo.
+  const CROP_INFO = {
+    1: {
+      img: 'img/cana.jpg',
+      texto: 'La caña de azúcar (Saccharum officinarum) es una gramínea tropical de tallos altos y fibrosos. En Tucumán es el cultivo histórico de la provincia: se cosecha en la "zafra" (abril a noviembre) y se procesa en los ingenios.',
+      productos: ['Azúcar', 'Bioetanol', 'Bagazo (energía/papel)', 'Melaza (alimento animal)']
+    },
+    2: {
+      img: 'img/citrus.jpg',
+      texto: 'El citrus agrupa limón, naranja, mandarina y pomelo. Tucumán es la principal zona citrícola de Argentina y uno de los mayores productores mundiales de limón, con buena parte de la cosecha destinada a la industria.',
+      productos: ['Fruta fresca de exportación', 'Aceites esenciales', 'Jugo concentrado', 'Cáscara deshidratada']
+    },
+    3: {
+      img: 'img/maiz.jpg',
+      texto: 'El maíz es un cereal de ciclo estival: se siembra en primavera y se cosecha en otoño. Es uno de los cultivos extensivos más importantes del país, usado como alimento animal, consumo humano y materia prima industrial.',
+      productos: ['Alimento animal', 'Alimento humano (harina, aceite)', 'Almidón', 'Bioetanol']
+    },
+    6: {
+      img: 'img/soja.jpg',
+      texto: 'La soja es una oleaginosa de ciclo estival y uno de los principales cultivos de exportación de Argentina. Se procesa industrialmente para separar el aceite de la harina proteica.',
+      productos: ['Aceite de soja', 'Harina/pellets (alimento balanceado)', 'Biodiesel']
+    },
+    4: {
+      img: 'img/monte.jpg',
+      texto: 'El monte nativo es la vegetación boscosa original de la región (Chaco Serrano y Selva Pedemontana en las zonas más húmedas de Tucumán). No es un cultivo: es lo que queda del ecosistema original cuando no fue desmontado, y cumple un rol clave en la regulación hídrica y la conservación del suelo de todo el territorio agrícola que lo rodea.',
+      productos: ['Biodiversidad y hábitat', 'Regulación del ciclo hídrico', 'Protección contra la erosión', 'Captura de carbono']
+    },
+    5: {
+      img: 'img/pasturas.jpg',
+      texto: 'Las pasturas son superficies con pastizales naturales o implantados, destinadas principalmente a la alimentación del ganado. Pueden ser permanentes o parte de una rotación con cultivos agrícolas, y suelen ocupar los terrenos con mayores limitantes para la agricultura extensiva.',
+      productos: ['Carne (ganadería bovina)', 'Leche', 'Forraje', 'Cobertura y protección del suelo']
+    },
+    7: {
+      img: 'img/sorgo.jpg',
+      texto: 'El sorgo es un cereal de ciclo estival, más resistente a la sequía que el maíz. Se usa principalmente como forraje y alimento animal, y suele elegirse en los lotes con suelos más pobres o en años de menor disponibilidad de agua.',
+      productos: ['Alimento animal (grano y forraje)', 'Silaje', 'Etanol', 'Rotación y cobertura de suelos']
+    },
+    8: {
+      img: 'img/barbecho.jpg',
+      texto: 'El barbecho es un lote agrícola que en el momento de la imagen está sin cultivo activo: tierra preparada o en descanso dentro de la rotación, entre una cosecha y la siembra siguiente. No genera un producto en sí, pero es una etapa necesaria del manejo del suelo.',
+      productos: []
+    }
+  };
+
+  function showCropInfo(clase) {
+    const panel = document.getElementById('cropInfoPanel');
+    const datos = CROP_INFO[clase];
+    if (!datos) { panel.classList.remove('show'); return; } // todavía no hay ficha cargada para este cultivo
+    const nombre = (CLASES[clase] || [''])[0];
+    const productosHtml = (datos.productos && datos.productos.length)
+      ? `<div class="crop-products-label">Principales productos</div><div class="crop-products">${datos.productos.map(p => `<span>${p}</span>`).join('')}</div>`
+      : '';
+    panel.innerHTML = `<img src="${datos.img}" alt="${nombre}" onerror="this.style.display='none'"><h3>${nombre}</h3><p>${datos.texto}</p>${productosHtml}`;
+    panel.classList.add('show');
+  }
+  function hideCropInfo() {
+    document.getElementById('cropInfoPanel').classList.remove('show');
+  }
+
+  function selectClase(clase, elevM) {
+    if (selectedClase === clase && elevM === undefined) {
+      selectedClase = null; // click de nuevo sobre el mismo cultivo en la lista = deseleccionar
+    } else {
+      selectedClase = clase;
+    }
+    // Si vino de la sidebar (sin elevM) no hay un punto 3D nuevo al que anclar la foto flotante;
+    // si vino de un click en el terreno, quien llama a selectClase la vuelve a colocar después.
+    if (elevM === undefined) clearCropImage();
+    setHighlight(selectedClase);
+    updateSidebarActive();
+    if (selectedClase === null) {
+      infoBox.classList.remove('show');
+      hideCropInfo();
+    } else {
+      renderCard(selectedClase, elevM);
+      showCropInfo(selectedClase);
+    }
+  }
+
+  // Construye la lista de cultivos de la sidebar: primero el ítem "ver todos" (para volver
+  // a la vista completa), después cada cultivo (nombre + barra de superficie si hay JSON cargado).
+  function buildCropSidebar() {
+    cropListEl.innerHTML = '';
+
+    const rowAll = document.createElement('div');
+    rowAll.className = 'crop-row crop-row-all';
+    rowAll.dataset.clase = 'all';
+    rowAll.innerHTML = `
+      <span class="sw" style="background:linear-gradient(135deg,#FF69B4,#8A2BE2,#228B22)"></span>
+      <div class="crop-row-main"><div class="crop-row-top"><span class="crop-name">Ver todos los cultivos</span></div></div>`;
+    rowAll.addEventListener('click', () => {
+      selectedClase = null;
+      clearCropImage();
+      setHighlight(null);
+      updateSidebarActive();
+      infoBox.classList.remove('show');
+      hideCropInfo();
+    });
+    cropListEl.appendChild(rowAll);
+
+    const areasDelAnio = areasActivas();
+    const areas = areasDelAnio ? Object.values(areasDelAnio).map(Number) : null;
+    const maxArea = areas && areas.length ? Math.max(...areas) : null;
+    Object.keys(CLASES).forEach(k => {
+      const clase = Number(k);
+      const [nombre, color] = CLASES[clase];
+      const areaHa = areasDelAnio ? areasDelAnio[String(clase)] : undefined;
+      const row = document.createElement('div');
+      row.className = 'crop-row';
+      row.dataset.clase = String(clase);
+      const barHtml = (areaHa !== undefined && maxArea)
+        ? `<div class="crop-bar-track"><div class="crop-bar-fill" style="width:${Math.max(4, Number(areaHa) / maxArea * 100)}%;background:${color}"></div></div>`
+        : '';
+      row.innerHTML = `
+        <span class="sw" style="background:${color}"></span>
+        <div class="crop-row-main">
+          <div class="crop-row-top"><span class="crop-name">${nombre}</span>${areaHa !== undefined ? `<span class="crop-value">${formatHa(areaHa)}</span>` : ''}</div>
+          ${barHtml}
+        </div>`;
+      row.addEventListener('click', () => selectClase(clase));
+      cropListEl.appendChild(row);
+    });
+  }
+  buildCropSidebar();
+  buildYearToggle(); // si se cargó clasificación histórica, esto es lo que hace aparecer el selector Actual/2018
+  setupCompareToggle();
+  const reliefRange = document.getElementById('reliefRange');
+  const reliefValue = document.getElementById('reliefValue');
+  reliefRange.addEventListener('input', () => {
+    const mult = parseFloat(reliefRange.value);
+    reliefValue.textContent = mult.toFixed(1) + 'x';
+    zScale = BASE_Z_SCALE * mult;
+    for (let idx = 0; idx < pos.count; idx++) pos.setY(idx, normArr[idx] * zScale);
+    pos.needsUpdate = true;
+    geometry.computeVertexNormals();
+    // Si había un palito clavado (y su foto flotante), el relieve nuevo ya no coincide con su altura: los retiramos.
+    if (marcador) { scene.remove(marcador); marcador = null; infoBox.classList.remove('show'); }
+    clearCropImage();
+  });
+
+  function pickAt(clientX, clientY) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObject(terrain);
+    if (hits.length === 0 || !hits[0].uv) return null;
+    const u = hits[0].uv.x, v = hits[0].uv.y;
+    const ix = Math.min(n - 1, Math.max(0, Math.round(u * (n - 1))));
+    const iy = Math.min(n - 1, Math.max(0, Math.round((1 - v) * (n - 1))));
+    const idx = iy * n + ix;
+    const clase = Math.round(clasifLookup[idx]);
+    const info = CLASES[clase];
+    return { info, h: heights[idx], point: hits[0].point, clase };
+  }
+
+  // "Palito" indicador: un pin que se clava en el terreno en el punto exacto donde hiciste click,
+  // del color de la clase para que se vea de un vistazo qué cultivo marcaste.
+  let marcador = null;
+  function createMarker(colorHex) {
+    const group = new THREE.Group();
+    const color = new THREE.Color(colorHex || '#ffffff');
+    const mat = new THREE.MeshBasicMaterial({ color });
+    const poleHeight = 12;
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, poleHeight, 8), mat);
+    pole.position.y = poleHeight / 2;
+    group.add(pole);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(1.3, 3, 10), mat);
+    tip.position.y = poleHeight + 1.5;
+    group.add(tip);
+    const base = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.8, 16), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
+    base.rotation.x = -Math.PI / 2;
+    base.position.y = 0.05;
+    group.add(base);
+    return group;
+  }
+  function placeMarker(point, colorHex) {
+    if (marcador) {
+      scene.remove(marcador);
+      marcador.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+    }
+    marcador = createMarker(colorHex);
+    marcador.position.copy(point);
+    scene.add(marcador);
+  }
+
+  // Imagen flotante sobre el marcador: muestra la foto del cultivo clickeado, para cualquier
+  // clase que tenga una imagen cargada en CROP_INFO (ya no está limitado a caña). Cachea cada
+  // textura la primera vez que se pide, así clickear el mismo cultivo de nuevo no la recarga.
+  const textureLoader = new THREE.TextureLoader();
+  const cropTextureCache = {}; // clase -> THREE.Texture
+  let cropSprite = null;
+
+  function clearCropImage() {
+    if (cropSprite) { scene.remove(cropSprite); cropSprite.material.dispose(); cropSprite = null; }
+  }
+
+  function placeCropImage(point, clase) {
+    clearCropImage();
+    const datos = CROP_INFO[clase];
+    if (!datos || !datos.img) return; // todavía no hay foto cargada para este cultivo
+    const usarTextura = (tex) => {
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(11, 11, 1);
+      sprite.position.set(point.x, point.y + 19, point.z);
+      cropSprite = sprite;
+      scene.add(sprite);
+    };
+    if (cropTextureCache[clase]) { usarTextura(cropTextureCache[clase]); return; }
+    textureLoader.load(
+      datos.img,
+      (tex) => { cropTextureCache[clase] = tex; usarTextura(tex); },
+      undefined,
+      (err) => console.warn('[imagen cultivo]', datos.img, 'no se encontró — subila al repo para que aparezca.', err)
+    );
+  }
+
+  // Hover: pasar el mouse por encima identifica el cultivo en tiempo real (desktop).
+  renderer.domElement.addEventListener('mousemove', (ev) => {
+    const result = pickAt(ev.clientX, ev.clientY);
+    if (result) {
+      tooltip.innerHTML = result.info
+        ? `<b>${result.info[0]}</b> · ${result.h.toFixed(0)} m`
+        : `Sin clasificar · ${result.h.toFixed(0)} m`;
+      tooltip.style.left = ev.clientX + 'px';
+      tooltip.style.top = ev.clientY + 'px';
+      tooltip.classList.add('show');
+    } else {
+      tooltip.classList.remove('show');
+    }
+  });
+  renderer.domElement.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
+
+  // Detector de "tap/click" unificado: en algunos celulares, el gesto de rotar la cámara
+  // (OrbitControls) se come el evento 'click' nativo del navegador y el tap no marcaba nada.
+  // Midiendo nosotros mismos el movimiento entre pointerdown/pointerup evitamos ese problema,
+  // y en desktop el resultado es idéntico a un click normal.
+  let pointerDownInfo = null;
+  renderer.domElement.addEventListener('pointerdown', (ev) => {
+    pointerDownInfo = { x: ev.clientX, y: ev.clientY, t: Date.now() };
+  });
+  renderer.domElement.addEventListener('pointerup', (ev) => {
+    if (!pointerDownInfo) return;
+    const dx = ev.clientX - pointerDownInfo.x;
+    const dy = ev.clientY - pointerDownInfo.y;
+    const moved = Math.sqrt(dx * dx + dy * dy);
+    const elapsed = Date.now() - pointerDownInfo.t;
+    pointerDownInfo = null;
+    if (moved > 10 || elapsed > 600) return; // fue arrastre para rotar, no un tap/click
+
+    const result = pickAt(ev.clientX, ev.clientY);
+    if (result) {
+      placeMarker(result.point, result.info ? result.info[1] : '#ffffff');
+      if (result.info) {
+        selectClase(result.clase, result.h);
+        placeCropImage(result.point, result.clase);
+      } else {
+        clearCropImage();
+        infoBox.innerHTML = `Sin clasificar · elevación ${result.h.toFixed(0)} m`;
+        infoBox.classList.add('show');
+      }
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  (function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  })();
+}
+</script>
+</body>
+</html>
