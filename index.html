@@ -98,73 +98,95 @@
   #titleChip .t1 { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.02em; }
   #titleChip .t2 { font-size: 0.65rem; color: var(--muted); margin-top: 1px; }
 
-  #leftStack {
-    position: fixed; z-index: 10; left: 14px;
-    top: calc(14px + env(safe-area-inset-top, 0px));
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
-    pointer-events: none;
-  }
-  #leftStack > * { pointer-events: auto; }
+    /* ===== BARRA DE CULTIVOS (horizontal, arriba) ===== */
   #sidebar {
-    flex: 0 1 auto; min-height: 0;
-    background: var(--panel); border-radius: 12px; padding: 12px; font-size: 0.75rem;
-    width: 230px; max-width: 70vw; max-height: 66vh; overflow-y: auto;
-    display: none;
+    position: fixed; z-index: 10;
+    top: calc(66px + env(safe-area-inset-top, 0px));
+    left: 14px; right: 14px;
+    display: none; align-items: stretch; gap: 10px;
+    padding: 8px; border-radius: 16px;
+    background: var(--panel); border: 1px solid rgba(128,128,128,0.22);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.28);
   }
-  #sidebar.show { display: block; }
-  #sidebarHeader { margin-bottom: 8px; }
-  #sidebarHeader .title { font-weight: 700; font-size: 0.85rem; }
-  #sidebarHeader .subtitle { color: var(--muted); font-size: 0.68rem; margin-top: 2px; }
+  #sidebar.show { display: flex; }
 
-  /* --- Solo en pantallas angostas (celular): la sidebar tapaba toda la vista y el mapa
-     quedaba sin tocar. Acá y solo acá la volvemos colapsable; en desktop esta regla
-     ni siquiera se evalúa. --- */
-  @media (max-width: 700px) {
-    #sidebar {
-      width: auto; max-width: 62vw; max-height: 46px; overflow: hidden;
-      transition: max-height 0.25s ease; cursor: pointer;
-    }
-    #sidebar.expanded { max-height: 60vh; overflow-y: auto; }
-    #sidebarHeader::after { content: '▾ tocar para ver cultivos'; display: block; font-size: 0.62rem; color: var(--muted); margin-top: 2px; }
-    #sidebar.expanded #sidebarHeader::after { content: '▴ tocar para cerrar'; }
+  #yearToggle {
+    display: none; gap: 4px; flex: 0 0 auto; align-self: center;
+    padding: 3px; border-radius: 11px; background: rgba(128,128,128,0.14);
   }
-  .crop-row {
-    display: flex; align-items: flex-start; gap: 7px; padding: 6px 5px; border-radius: 8px;
-    cursor: pointer; transition: background 0.15s; border: 1px solid transparent;
-  }
-  .crop-row:hover { background: rgba(128,128,128,0.12); }
-  .crop-row.active { background: rgba(128,128,128,0.16); border-color: rgba(128,128,128,0.35); }
-  .crop-row span.sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-top: 3px; flex-shrink: 0; }
-  .crop-row-main { flex: 1; min-width: 0; }
-  .crop-row-top { display: flex; justify-content: space-between; gap: 6px; }
-  .crop-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .crop-value { color: var(--muted); white-space: nowrap; font-size: 0.7rem; }
-  .crop-bar-track { height: 4px; border-radius: 2px; background: rgba(128,128,128,0.18); margin-top: 4px; overflow: hidden; }
-  .crop-bar-fill { height: 100%; border-radius: 2px; }
-  .crop-row-all { margin-bottom: 6px; padding-bottom: 8px; border-bottom: 1px solid rgba(128,128,128,0.25); }
-  .crop-row-all .crop-name { font-weight: 600; }
-  .crop-row-all span.sw { border-radius: 50%; }
-
-  #yearToggle { display: none; gap: 6px; margin-bottom: 10px; }
   #yearToggle .year-btn {
-    flex: 1; padding: 6px 0; border-radius: 8px; border: 1px solid rgba(128,128,128,0.35);
-    background: transparent; color: var(--text); font-size: 0.72rem; cursor: pointer; font-family: inherit;
+    padding: 6px 12px; border-radius: 8px; border: none; background: transparent;
+    color: var(--text); font-size: 0.74rem; cursor: pointer; font-family: inherit; transition: background 0.15s;
   }
-  #yearToggle .year-btn.active { background: var(--accent); color: #1a1c1f; border-color: var(--accent); font-weight: 600; }
+  #yearToggle .year-btn.active { background: var(--accent); color: #1a1c1f; font-weight: 700; }
 
   #compareToggleBtn {
-    display: none; cursor: pointer; margin-bottom: 10px; padding: 7px 10px; border-radius: 8px;
-    background: rgba(128,128,128,0.14); font-size: 0.72rem; text-align: center; font-weight: 600;
+    display: none; flex: 0 0 auto; align-self: center; cursor: pointer;
+    padding: 8px 12px; border-radius: 10px; background: rgba(128,128,128,0.14);
+    font-size: 0.72rem; font-weight: 600; white-space: nowrap; transition: background 0.15s;
   }
-  #compareToggleBtn:hover { background: rgba(128,128,128,0.24); }
+  #compareToggleBtn:hover { background: rgba(128,128,128,0.26); }
   #compareToggleBtn.show { display: block; }
 
+  #cropList {
+    flex: 1 1 auto; min-width: 0; display: flex; gap: 8px; padding: 2px 2px 4px;
+    overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: thin;
+  }
+  #cropList::-webkit-scrollbar { height: 4px; }
+  #cropList::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.4); border-radius: 4px; }
+  .crop-row {
+    flex: 0 0 auto; min-width: 118px; display: flex; align-items: flex-start; gap: 8px;
+    padding: 7px 11px; border-radius: 12px; cursor: pointer; scroll-snap-align: start;
+    border: 1px solid rgba(128,128,128,0.2); background: rgba(128,128,128,0.07);
+    transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  }
+  .crop-row:hover { background: rgba(128,128,128,0.17); transform: translateY(-1px); }
+  .crop-row.active { background: rgba(255,105,180,0.15); border-color: var(--accent); }
+  .crop-row span.sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-top: 3px; flex-shrink: 0; }
+  .crop-row-main { flex: 1; min-width: 0; }
+  .crop-row-top { display: flex; flex-direction: column; gap: 1px; }
+  .crop-name { white-space: nowrap; font-size: 0.76rem; font-weight: 600; }
+  .crop-value { color: var(--muted); white-space: nowrap; font-size: 0.68rem; }
+  .crop-bar-track { height: 4px; border-radius: 2px; background: rgba(128,128,128,0.2); margin-top: 5px; overflow: hidden; }
+  .crop-bar-fill { height: 100%; border-radius: 2px; }
+  .crop-row-all span.sw { border-radius: 50%; }
+
+  /* ===== BLOQUE INFERIOR IZQUIERDO: ficha + estadísticas juntas ===== */
+  #leftStack {
+    position: fixed; z-index: 10; left: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    width: min(320px, calc(100vw - 28px));
+    max-height: calc(100vh - 200px); max-height: calc(100dvh - 200px);
+    display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+  }
+  #leftStack > * { pointer-events: auto; }
+
+  #cropInfoPanel {
+    position: relative; display: none; flex: 0 1 auto; min-height: 0; overflow-y: auto;
+    background: var(--panel); border: 1px solid rgba(128,128,128,0.22);
+    border-radius: 16px; padding: 14px;
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+  }
+  #cropInfoPanel.show { display: block; }
+  .crop-info-close {
+    position: absolute; top: 10px; right: 10px; z-index: 2; width: 26px; height: 26px; border-radius: 50%;
+    border: none; background: rgba(0,0,0,0.6); color: #fff; font-size: 1.05rem; line-height: 1; cursor: pointer;
+  }
+  #cropInfoPanel img { width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; display: block; }
+  #cropInfoPanel h3 { margin: 0 0 6px; font-size: 0.98rem; }
+  #cropInfoPanel p { margin: 0 0 10px; font-size: 0.76rem; color: var(--muted); line-height: 1.5; }
+  #cropInfoPanel .crop-products-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+  #cropInfoPanel .crop-products { display: flex; flex-wrap: wrap; gap: 5px; }
+  #cropInfoPanel .crop-products span { background: rgba(255,105,180,0.15); border: 1px solid rgba(255,105,180,0.35); color: var(--text); font-size: 0.68rem; padding: 3px 9px; border-radius: 20px; }
+
   #info {
-    position: fixed; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 50%;
-    transform: translateX(-50%); z-index: 10;
-    background: var(--panel); border-radius: 12px; padding: 12px 18px;
-    font-size: 0.85rem; display: none; text-align: left; max-width: 92vw;
+    display: none; flex: 0 0 auto; text-align: left;
+    background: var(--panel); border: 1px solid rgba(128,128,128,0.22);
+    border-radius: 14px; padding: 12px 16px; font-size: 0.85rem;
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.3);
   }
   #info.show { display: block; }
   #info .info-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 6px; }
@@ -172,27 +194,6 @@
   #info .stat { display: flex; flex-direction: column; }
   #info .stat-label { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
   #info .stat-value { font-size: 0.95rem; font-weight: 600; }
-
-  #cropInfoPanel {
-    position: relative; box-sizing: border-box; width: 230px; max-width: 70vw; max-height: 42vh; overflow-y: auto; flex: 0 0 auto; margin-top: auto;
-    background: var(--panel); border-radius: 12px; padding: 14px;
-    display: none; box-shadow: 0 8px 28px rgba(0,0,0,0.35);
-  }
-  #cropInfoPanel.show { display: block; }
-  .crop-info-close {
-    position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 50%;
-    border: none; background: rgba(0,0,0,0.55); color: #fff; font-size: 1rem; line-height: 1; cursor: pointer;
-  }
-  #cropInfoPanel img { width: 100%; max-height: 110px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; display: block; }
-  #cropInfoPanel h3 { margin: 0 0 6px; font-size: 0.92rem; }
-  #cropInfoPanel p { margin: 0 0 8px; font-size: 0.76rem; color: var(--muted); line-height: 1.45; }
-  #cropInfoPanel .crop-products-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
-  #cropInfoPanel .crop-products { display: flex; flex-wrap: wrap; gap: 5px; }
-  #cropInfoPanel .crop-products span { background: rgba(255,105,180,0.15); border: 1px solid rgba(255,105,180,0.35); color: var(--text); font-size: 0.68rem; padding: 3px 8px; border-radius: 20px; }
-  @media (max-width: 700px) {
-    #cropInfoPanel { width: auto; max-width: 62vw; max-height: 38vh; font-size: 0.9em; }
-    #cropInfoPanel img { max-height: 80px; }
-  }
 
   #reliefControl {
     position: fixed; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 10;
@@ -234,6 +235,7 @@
     position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); right: 14px; z-index: 10;
     display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 300px;
   }
+
   #hint {
     background: var(--panel); border-radius: 10px; padding: 8px 12px; font-size: 0.72rem;
     color: var(--muted); display: none;
@@ -262,6 +264,37 @@
   #comparePanel .cmp-donut-box { flex: 1; text-align: center; min-width: 0; }
   #comparePanel .cmp-donut-title { font-size: 0.68rem; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
   #comparePanel .cmp-donut-box canvas { max-width: 100%; }
+
+  /* ===== AJUSTES RESPONSIVE ===== */
+  #rightStack { top: calc(140px + env(safe-area-inset-top, 0px)); }
+  #comparePanel {
+    max-height: calc(100vh - 260px); max-height: calc(100dvh - 260px);
+    border: 1px solid rgba(128,128,128,0.22); box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+  }
+  #hint, #reliefControl { border: 1px solid rgba(128,128,128,0.22); }
+
+  @media (max-width: 700px) {
+    #titleChip .t2 { display: none; }
+    #sidebar { top: calc(56px + env(safe-area-inset-top, 0px)); left: 10px; right: 10px; padding: 6px; gap: 8px; border-radius: 14px; }
+    .crop-row { min-width: 104px; padding: 6px 9px; }
+    #yearToggle .year-btn { padding: 6px 9px; }
+
+    #leftStack {
+      left: 10px; right: 10px; width: auto; gap: 8px;
+      bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+      max-height: 52vh; max-height: 52dvh;
+    }
+    #cropInfoPanel { max-height: 30vh; max-height: 30dvh; padding: 12px; }
+    #cropInfoPanel img { height: 70px; }
+
+    #rightStack { top: calc(132px + env(safe-area-inset-top, 0px)); right: 10px; max-width: calc(100vw - 20px); }
+    #hint { display: none !important; }
+    #comparePanel { width: calc(100vw - 20px); max-width: none; }
+
+    /* el control de relieve sube para no chocar con el bloque de abajo */
+    #reliefControl { right: auto; left: 10px; bottom: auto; top: calc(132px + env(safe-area-inset-top, 0px)); }
+  }
+  
 </style>
 </head>
 <body>
@@ -322,18 +355,17 @@
   <div class="t1">🌎 El Pulso de Burruyacú</div>
   <div class="t2">Explorá la estructura agrícola del territorio</div>
 </div>
-<div id="leftStack">
+
 <div id="sidebar">
-  <div id="sidebarHeader" onclick="if(window.innerWidth<=700){document.getElementById('sidebar').classList.toggle('expanded')}">
-    <div class="title">Cultivos</div>
-    <div class="subtitle">Tocá un cultivo para resaltarlo · "Ver todos" para volver</div>
-  </div>
   <div id="yearToggle"></div>
   <div id="compareToggleBtn"></div>
   <div id="cropList"></div>
 </div>
-<div id="cropInfoPanel"></div>
+<div id="leftStack">
+  <div id="cropInfoPanel"></div>
+  <div id="info"></div>
 </div>
+
 <div id="reliefControl">
   <label>Relieve <span id="reliefValue">1.0x</span></label>
   <input type="range" id="reliefRange" min="1" max="3" step="0.1" value="1">
@@ -342,7 +374,7 @@
   <div id="hint" style="cursor:pointer" onclick="document.getElementById('tutorial').classList.add('show')" title="Ver el tutorial de nuevo">Arrastrá para rotar · rueda para zoom · pasá el mouse para identificar el cultivo · hacé click para marcar el punto y ver la superficie · (tocá acá para ver la ayuda)</div>
   <div id="comparePanel"></div>
 </div>
-<div id="info"></div>
+
 <div id="tooltip"></div>
 
 <div id="tutorial">
