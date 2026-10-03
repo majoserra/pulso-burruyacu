@@ -990,13 +990,52 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
     tlPlay.textContent = reproduciendo ? '❚❚' : '▶';
   }
 
+    // ---- Fundido suave entre años ----
+  // Segunda capa sobre el mismo terreno (comparte la malla): sube su opacidad con la textura del
+  // año nuevo y, al terminar, esa textura pasa a ser la base y la capa se esconde.
+  const FADE_MS = 700; // duración del fundido (ms). Mantenelo menor que el intervalo del ▶ (1500 ms)
+  const overlay = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+    map: texture, roughness: 0.9, metalness: 0.02,
+    transparent: true, opacity: 0, depthWrite: false,
+    polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1
+  }));
+  overlay.visible = false;
+  scene.add(overlay);
+  let fadeId = 0;
+
+  function cambiarTextura(nuevaTex) {
+    const miId = ++fadeId;
+    // si había un fundido a medias, la textura que venía entrando pasa a ser la base
+    if (overlay.visible) {
+      terrain.material.map = overlay.material.map;
+      terrain.material.needsUpdate = true;
+    }
+    overlay.material.map = nuevaTex;
+    overlay.material.opacity = 0;
+    overlay.material.needsUpdate = true;
+    overlay.visible = true;
+    const t0 = performance.now();
+    function paso(now) {
+      if (miId !== fadeId) return; // llegó otro cambio de año: este fundido se cancela
+      const k = Math.min(1, (now - t0) / FADE_MS);
+      overlay.material.opacity = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; // easeInOut
+      if (k < 1) {
+        requestAnimationFrame(paso);
+      } else {
+        terrain.material.map = nuevaTex;
+        terrain.material.needsUpdate = true;
+        overlay.visible = false;
+      }
+    }
+    requestAnimationFrame(paso);
+  }
+
   function aplicarBundle(i, b) {
     indiceActivo = i;
     clasifLookup = b.clasifLookup;
     texInfo = b.texInfo;
     texture = b.texture;
-    terrain.material.map = texture;
-    terrain.material.needsUpdate = true;
+    cambiarTextura(texture);
     const scrollPrevio = cropListEl.scrollLeft;
     buildCropSidebar();
     cropListEl.scrollLeft = scrollPrevio;
