@@ -365,6 +365,112 @@
   }
   @media (max-width: 380px) { .tl-tick:nth-child(even) { display: none; } }
 
+    /* ===== ESCALADO FLUIDO: todo se achica/agranda con la ventana (con piso y techo) ===== */
+  :root {
+    /* Unidad base: sube con el alto/ancho de la ventana. Piso 11px (no se ve minúsculo), techo 14px. */
+    --u: clamp(11px, min(1.35vh, 1vw), 14px);
+  }
+
+  #titleChip { top: calc(var(--u) + env(safe-area-inset-top, 0px)); font-size: var(--u); padding: .5em 1.3em; border-radius: .9em; }
+  #titleChip .t1 { font-size: 1em; }
+  #titleChip .t2 { font-size: .78em; }
+
+  /* --- Barra de cultivos (arriba): los chips se reparten el ancho --- */
+  #sidebar {
+    font-size: var(--u);
+    top: calc(var(--u) * 5 + env(safe-area-inset-top, 0px));
+    left: var(--u); right: var(--u);
+    padding: .6em; gap: .7em; border-radius: 1.2em;
+  }
+  #cropList { gap: .6em; padding: .15em; }
+  .crop-row {
+    flex: 1 1 0; min-width: 6.4em; max-width: 15em;
+    gap: .6em; padding: .55em .8em; border-radius: .9em;
+  }
+  .crop-row span.sw { width: .8em; height: .8em; border-radius: .25em; margin-top: .25em; }
+  .crop-name { font-size: 1em; white-space: normal; line-height: 1.15; overflow-wrap: anywhere; }
+  .crop-value { font-size: .86em; }
+  .crop-bar-track { height: .3em; margin-top: .45em; }
+
+  /* --- Línea de tiempo (abajo) --- */
+  #timeline {
+    --th: 1.4em; /* tamaño de la perilla */
+    font-size: var(--u);
+    left: var(--u); right: var(--u);
+    bottom: calc(var(--u) + env(safe-area-inset-bottom, 0px));
+    max-width: 64em; gap: 1em; padding: .8em 1.5em .6em .9em; border-radius: 1.3em;
+  }
+  .tl-play { width: 3em; height: 3em; font-size: 1em; }
+  .tl-head { gap: .8em; margin-bottom: .3em; }
+  .tl-year { font-size: 1.7em; }
+  .tl-sub { font-size: .86em; }
+  #tlRange { font-size: var(--u); height: calc(var(--th) + .1em); }
+  #tlRange::-webkit-slider-runnable-track {
+    height: .45em; border-radius: .25em;
+    background: linear-gradient(90deg, var(--accent) calc(var(--th) / 2 + (100% - var(--th)) * var(--p)), rgba(128,128,128,0.3) 0);
+  }
+  #tlRange::-webkit-slider-thumb { width: var(--th); height: var(--th); margin-top: calc((.45em - var(--th)) / 2); border-width: .22em; }
+  #tlRange::-moz-range-track { height: .45em; border-radius: .25em; }
+  #tlRange::-moz-range-progress { height: .45em; border-radius: .25em; }
+  #tlRange::-moz-range-thumb { width: var(--th); height: var(--th); border-width: .22em; }
+  .tl-ticks { height: 1.7em; margin: .3em calc(var(--th) / 2) 0; }
+  .tl-tick { font-size: .8em; }
+
+  /* --- Panel lateral (ficha + estadísticas): ocupa solo lo que sobra entre las dos barras --- */
+  #leftStack {
+    font-size: var(--u);
+    left: var(--u);
+    bottom: calc(var(--u) * 9.5 + env(safe-area-inset-bottom, 0px));
+    width: min(25em, calc(100vw - var(--u) * 2));
+    max-height: calc(100vh - var(--u) * 24); max-height: calc(100dvh - var(--u) * 24);
+    gap: .7em;
+  }
+  #cropInfoPanel { padding: 1em; border-radius: 1.2em; }
+  #cropInfoPanel img { height: 7.5em; border-radius: .8em; margin-bottom: .8em; }
+  #cropInfoPanel h3 { font-size: 1.15em; }
+  #cropInfoPanel p { font-size: .95em; }
+  #cropInfoPanel .crop-products-label { font-size: .78em; }
+  #cropInfoPanel .crop-products span { font-size: .82em; }
+  .crop-info-close { width: 2em; height: 2em; font-size: 1em; }
+  #info { font-size: var(--u); padding: .8em 1.1em; border-radius: 1.1em; }
+  #info .info-title { font-size: 1.1em; }
+  #info .stat-label { font-size: .75em; }
+  #info .stat-value { font-size: 1.1em; }
+
+  /* --- Relieve y ayuda --- */
+  #reliefControl {
+    font-size: var(--u); right: var(--u);
+    bottom: calc(var(--u) * 9.5 + env(safe-area-inset-bottom, 0px));
+    padding: .6em .9em; border-radius: .8em;
+  }
+  #reliefControl input[type=range] { width: 10em; }
+  #rightStack { font-size: var(--u); top: calc(var(--u) * 13 + env(safe-area-inset-top, 0px)); right: var(--u); max-width: 24em; }
+  #hint { font-size: .9em; padding: .6em .9em; border-radius: .8em; }
+
+  /* Pantallas bajas (notebooks chicas): se saca lo secundario para ganar altura */
+  @media (max-height: 640px) {
+    .crop-bar-track { display: none; }
+    #titleChip .t2 { display: none; }
+  }
+
+  /* Celulares */
+  @media (max-width: 700px) {
+    #titleChip .t2 { display: none; }
+    #sidebar { top: calc(var(--u) * 4.2 + env(safe-area-inset-top, 0px)); left: calc(var(--u) * .9); right: calc(var(--u) * .9); padding: .5em; gap: .5em; }
+    .crop-row { flex: 0 0 auto; min-width: 7.8em; }
+    #timeline { --th: 1.9em; left: calc(var(--u) * .9); right: calc(var(--u) * .9); bottom: calc(var(--u) * .9 + env(safe-area-inset-bottom, 0px)); padding: .7em 1.2em .5em .8em; gap: .8em; }
+    #leftStack {
+      left: calc(var(--u) * .9); right: calc(var(--u) * .9); width: auto;
+      bottom: calc(var(--u) * 9.8 + env(safe-area-inset-bottom, 0px));
+      max-height: calc(100vh - var(--u) * 27); max-height: calc(100dvh - var(--u) * 27);
+    }
+    #cropInfoPanel { max-height: 30vh; max-height: 30dvh; padding: .9em; }
+    #cropInfoPanel img { height: 5em; }
+    #hint { display: none !important; }
+    #rightStack { top: calc(var(--u) * 12.4 + env(safe-area-inset-top, 0px)); right: calc(var(--u) * .9); max-width: calc(100vw - var(--u) * 1.8); }
+    #reliefControl { right: auto; left: calc(var(--u) * .9); bottom: auto; top: calc(var(--u) * 12 + env(safe-area-inset-top, 0px)); }
+  }
+
 </style>
 </head>
 <body>
@@ -1138,7 +1244,7 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
     rowAll.dataset.clase = 'all';
     rowAll.innerHTML = `
       <span class="sw" style="background:linear-gradient(135deg,#FF69B4,#8A2BE2,#228B22)"></span>
-      <div class="crop-row-main"><div class="crop-row-top"><span class="crop-name">Ver todos los cultivos</span></div></div>`;
+      <div class="crop-row-main"><div class="crop-row-top"><span class="crop-name">Ver todos</span></div></div>`;
     rowAll.addEventListener('click', () => {
       selectedClase = null;
       setHighlight(null);
