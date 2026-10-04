@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
 <title>Prototipo 3D - Burruyacú</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -14,16 +15,13 @@
     --text: #e8eaed;
     --muted: #9aa0a6;
     --accent: #FF69B4;
+    color-scheme: dark; /* barras de scroll, sliders y controles nativos también oscuros */
     box-sizing: border-box;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-  @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) {
-      --bg: #f4f5f7; --panel: rgba(255,255,255,0.92); --text: #1a1c1f; --muted: #55595e;
-    }
-  }
-  :root[data-theme="light"] { --bg: #f4f5f7; --panel: rgba(255,255,255,0.92); --text: #1a1c1f; --muted: #55595e; }
+  
+  
   html, body { height: 100%; margin: 0; }
   body {
     background: var(--bg); color: var(--text);
@@ -708,13 +706,13 @@
   #splash.entrando #mapWrap { transform: scale(3.4); opacity: 0; pointer-events: none; }
 
   #splash .intro-loader {
-    --tw: min(70vw, 320px);
+    --tw: min(62vw, 240px);
     position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 1rem; padding: 24px; opacity: 0; pointer-events: none; transition: opacity .6s ease .5s;
   }
   #splash.entrando .intro-loader { opacity: 1; }
   .il-year {
-    font-size: clamp(3.6rem, 16vw, 6rem); font-weight: 800; line-height: 1; letter-spacing: .02em;
+    font-size: clamp(2.4rem, 10vw, 3.6rem); font-weight: 800; line-height: 1; letter-spacing: .02em;
     color: var(--accent); font-variant-numeric: tabular-nums; text-shadow: 0 0 36px rgba(255,105,180,.5);
   }
   .il-year.tick { animation: ilTick .3s ease-out; }
