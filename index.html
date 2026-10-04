@@ -551,11 +551,7 @@
   }
 
   /* ===== Barras de scroll: del color del bloque, un poco más oscuras (nada de blanco) ===== */
-  :root { --sb-thumb: rgba(0,0,0,.42); --sb-thumb-hover: rgba(0,0,0,.62); }
-  @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) { --sb-thumb: rgba(0,0,0,.2); --sb-thumb-hover: rgba(0,0,0,.34); }
-  }
-  :root[data-theme="light"] { --sb-thumb: rgba(0,0,0,.2); --sb-thumb-hover: rgba(0,0,0,.34); }
+  :root { --sb-thumb: #8a8a8a; --sb-thumb-hover: #a3a3a3; }
   #cropInfoPanel, #rightStack, #cropList, #leftStack {
     scrollbar-width: thin; scrollbar-color: var(--sb-thumb) transparent;
   }
