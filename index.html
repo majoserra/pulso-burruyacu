@@ -471,6 +471,85 @@
     #reliefControl { right: auto; left: calc(var(--u) * .9); bottom: auto; top: calc(var(--u) * 12 + env(safe-area-inset-top, 0px)); }
   }
 
+    /* ===== PANEL DERECHO: brújula + nota sobre imágenes ===== */
+  #rightStack {
+    max-height: calc(100vh - var(--u) * 28); max-height: calc(100dvh - var(--u) * 28);
+    overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; padding: .3em;
+  }
+  #hint { max-width: 17em; }
+  #sidePanels { display: none; flex-direction: column; gap: .7em; width: 17em; }
+  #sidePanels.show { display: flex; }
+  .side-card {
+    background: var(--panel); border: 1px solid rgba(128,128,128,0.22); border-radius: 1.2em;
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.3); padding: .9em 1em;
+  }
+
+  /* Rosa de los vientos */
+  #compassCard { display: flex; flex-direction: column; align-items: center; gap: .45em; }
+  .cp-head { align-self: stretch; font-size: .8em; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .cp-btn { width: 11em; height: 11em; cursor: pointer; border-radius: 50%; outline: none; -webkit-tap-highlight-color: transparent; }
+  .cp-btn:focus-visible { box-shadow: 0 0 0 .2em var(--accent); }
+  .cp-tilt { width: 100%; height: 100%; will-change: transform; }
+  .cp-dial { width: 100%; height: 100%; will-change: transform; filter: drop-shadow(0 .3em .4em rgba(0,0,0,.35)); }
+  .cp-dial svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .cp-ring { fill: rgba(128,128,128,.08); stroke: rgba(128,128,128,.5); stroke-width: 1.5; transition: stroke .25s; }
+  .cp-tick { stroke: var(--muted); stroke-width: 1; }
+  .cp-tick.mid { stroke: var(--text); stroke-width: 1.6; }
+  .cp-k1 { fill: var(--text); } .cp-k2 { fill: var(--muted); }
+  .cp-n1 { fill: var(--accent); } .cp-n2 { fill: #c2417a; }
+  .cp-hub { fill: var(--bg); stroke: var(--text); stroke-width: 1.5; }
+  .cp-letter { fill: var(--text); font: 700 15px -apple-system, "Segoe UI", Roboto, sans-serif; text-anchor: middle; dominant-baseline: central; transform-box: fill-box; transform-origin: center; }
+  .cp-letter.n { fill: var(--accent); font-size: 19px; }
+  .cp-sun { fill: #FFC857; stroke: #b8860b; stroke-width: 1; }
+  .cp-read { display: flex; align-items: baseline; gap: .5em; font-size: 1.05em; }
+  .cp-lbl { color: var(--muted); font-size: .8em; }
+  .cp-read b { font-size: 1.25em; min-width: 1.5em; text-align: center; transition: color .2s; }
+  #cpDeg { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 2.6em; }
+  .cp-sub { font-size: .8em; color: var(--muted); }
+  .cp-tip { font-size: .72em; color: var(--muted); opacity: .8; }
+  #compassCard.alineado .cp-read b { color: var(--accent); }
+  #compassCard.alineado .cp-ring { stroke: var(--accent); }
+
+  /* Nota sobre las imágenes satelitales (plegable) */
+  .note-card { padding: 0; overflow: hidden; }
+  .note-card summary { list-style: none; cursor: pointer; padding: .8em 1em; font-weight: 700; font-size: .95em; display: flex; justify-content: space-between; align-items: center; gap: .6em; }
+  .note-card summary::-webkit-details-marker { display: none; }
+  .note-card summary::after { content: '▾'; color: var(--muted); transition: transform .2s; }
+  .note-card[open] summary::after { transform: rotate(180deg); }
+  .note-body { padding: 0 1em 1em; font-size: .9em; line-height: 1.5; color: var(--muted); }
+  .note-body p { margin: 0 0 .7em; }
+  .note-body b { color: var(--text); }
+  .note-body figure { margin: 0 0 .7em; }
+  .note-body img { width: 100%; height: 8em; object-fit: cover; border-radius: .8em; display: block; }
+  .note-body figcaption { font-size: .85em; margin-top: .3em; text-align: center; }
+  .note-legend { display: flex; align-items: center; gap: .5em; font-size: .9em; }
+  .note-sw { width: 1em; height: 1em; border-radius: .25em; background: #5a5a61; display: inline-block; flex: 0 0 auto; }
+
+  /* Perillas de los sliders: transparentes (aro rosa, sin relleno blanco) */
+  #tlRange::-webkit-slider-thumb { background: transparent; box-shadow: 0 0 .7em rgba(255,105,180,.6); }
+  #tlRange::-moz-range-thumb { background: transparent; box-shadow: 0 0 .7em rgba(255,105,180,.6); }
+  #reliefRange { -webkit-appearance: none; appearance: none; font-size: var(--u); height: 1.5em; margin: 0; background: transparent; cursor: pointer; }
+  #reliefRange::-webkit-slider-runnable-track { height: .45em; border-radius: .25em; background: rgba(128,128,128,.3); }
+  #reliefRange::-webkit-slider-thumb {
+    -webkit-appearance: none; box-sizing: border-box; width: 1.4em; height: 1.4em; margin-top: calc((.45em - 1.4em) / 2);
+    border-radius: 50%; background: transparent; border: .22em solid var(--accent); box-shadow: 0 0 .7em rgba(255,105,180,.6);
+  }
+  #reliefRange::-moz-range-track { height: .45em; border-radius: .25em; background: rgba(128,128,128,.3); }
+  #reliefRange::-moz-range-thumb {
+    box-sizing: border-box; width: 1.4em; height: 1.4em; border-radius: 50%;
+    background: transparent; border: .22em solid var(--accent); box-shadow: 0 0 .7em rgba(255,105,180,.6);
+  }
+
+  @media (max-height: 700px) { .cp-btn { width: 8.5em; height: 8.5em; } }
+  @media (max-width: 700px) {
+    #rightStack { max-height: 40vh; max-height: 40dvh; }
+    #sidePanels { width: 11.5em; gap: .5em; }
+    .cp-btn { width: 7.5em; height: 7.5em; }
+    .side-card { padding: .6em .7em; }
+    .cp-tip { display: none; }
+  }
+
 </style>
 </head>
 <body>
@@ -546,6 +625,30 @@
 </div>
 <div id="rightStack">
   <div id="hint" style="cursor:pointer" onclick="document.getElementById('tutorial').classList.add('show')" title="Ver el tutorial de nuevo">Arrastrá para rotar · rueda para zoom · pasá el mouse para identificar el cultivo · hacé click para marcar el punto y ver la superficie · (tocá acá para ver la ayuda)</div>
+  <div id="sidePanels">
+    <div id="compassCard" class="side-card">
+      <div class="cp-head">🧭 Orientación</div>
+      <div class="cp-btn" id="compassBtn" role="button" tabindex="0" title="Tocá para orientar el mapa al norte" aria-label="Rosa de los vientos: tocá para orientar al norte">
+        <div class="cp-tilt" id="cpTilt"><div class="cp-dial" id="cpDial"></div></div>
+      </div>
+      <div class="cp-read"><span class="cp-lbl">Mirando al</span><b id="cpName">N</b><span id="cpDeg">0°</span></div>
+      <div class="cp-sub" id="cpSub"></div>
+      <div class="cp-tip">Tocá la rosa para volver al norte</div>
+    </div>
+
+    <details id="imgNote" class="side-card note-card" open>
+      <summary>🛰️ Sobre las imágenes satelitales</summary>
+      <div class="note-body">
+        <p>Los mapas de cada año se obtienen <b>clasificando imágenes satelitales</b> del territorio: son las imágenes que usamos como base de todo lo que ves acá.</p>
+        <p>Si aparecen <b>huecos</b> sin clasificar es porque había <b>nubes</b> cuando el satélite pasó: tapan el suelo y no se puede identificar el cultivo. También pueden ser rutas, ciudades o ríos.</p>
+        <figure>
+          <img src="img/nubes.jpg" alt="Imagen satelital con nubes" onerror="this.parentElement.style.display='none'">
+          <figcaption>Ejemplo: imagen satelital con nubes</figcaption>
+        </figure>
+        <div class="note-legend"><span class="note-sw"></span> Gris = sin clasificar</div>
+      </div>
+    </details>
+  </div>
 </div>
 
 <div id="timeline">
@@ -1318,6 +1421,92 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
   }
   buildCropSidebar();
   setupTimeline();
+    // ---- Rosa de los vientos ----
+  // El norte del terreno es el eje -Z de la escena (la fila superior del raster = norte).
+  // Gira con la cámara, se inclina con la vista y, al tocarla, orienta el mapa al norte.
+  const sidePanels = document.getElementById('sidePanels');
+  const cpBox = document.getElementById('compassCard');
+  const cpBtn = document.getElementById('compassBtn');
+  const cpTilt = document.getElementById('cpTilt');
+  const cpDial = document.getElementById('cpDial');
+  const cpName = document.getElementById('cpName');
+  const cpDeg = document.getElementById('cpDeg');
+  const cpSub = document.getElementById('cpSub');
+
+  (function dibujarRosa() {
+    const c = 100;
+    const pt = (a, r) => { const t = a * Math.PI / 180; return [c + r * Math.sin(t), c - r * Math.cos(t)]; };
+    const f = (p) => p[0].toFixed(1) + ',' + p[1].toFixed(1);
+    // punta de la rosa: dos triángulos (mitad clara / mitad oscura) para dar volumen
+    const punta = (a, largo, ancho, c1, c2) => {
+      const tip = pt(a, largo), der = pt(a + 45, ancho), izq = pt(a - 45, ancho);
+      return `<polygon class="${c1}" points="${f(tip)} ${f(der)} ${c},${c}"/><polygon class="${c2}" points="${f(tip)} ${f(izq)} ${c},${c}"/>`;
+    };
+    let ticks = '';
+    for (let a = 0; a < 360; a += 5) {
+      const largo = a % 45 === 0 ? 11 : a % 15 === 0 ? 7 : 4;
+      const p1 = pt(a, 95), p2 = pt(a, 95 - largo);
+      ticks += `<line class="cp-tick${a % 45 === 0 ? ' mid' : ''}" x1="${p1[0].toFixed(1)}" y1="${p1[1].toFixed(1)}" x2="${p2[0].toFixed(1)}" y2="${p2[1].toFixed(1)}"/>`;
+    }
+    const letras = [['N', 0, 'n'], ['E', 90, ''], ['S', 180, ''], ['O', 270, '']]
+      .map(([t, a, cls]) => { const p = pt(a, 74); return `<text class="cp-letter ${cls}" x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}">${t}</text>`; }).join('');
+    // marca del sol: de dónde viene la luz del mapa (rumbo de la luz direccional)
+    const rumboSol = ((Math.atan2(sun.position.x, -sun.position.z) * 180 / Math.PI) + 360) % 360;
+    const ps = pt(rumboSol, 96);
+    cpDial.innerHTML = `<svg viewBox="-6 -6 212 212" aria-hidden="true">
+      <circle class="cp-ring" cx="100" cy="100" r="97"/>
+      ${ticks}
+      ${punta(45, 40, 10, 'cp-k1', 'cp-k2')}${punta(135, 40, 10, 'cp-k1', 'cp-k2')}${punta(225, 40, 10, 'cp-k1', 'cp-k2')}${punta(315, 40, 10, 'cp-k1', 'cp-k2')}
+      ${punta(90, 60, 16, 'cp-k1', 'cp-k2')}${punta(180, 60, 16, 'cp-k1', 'cp-k2')}${punta(270, 60, 16, 'cp-k1', 'cp-k2')}${punta(0, 60, 16, 'cp-n1', 'cp-n2')}
+      <circle class="cp-hub" cx="100" cy="100" r="4"/>
+      ${letras}
+      <circle class="cp-sun" cx="${ps[0].toFixed(1)}" cy="${ps[1].toFixed(1)}" r="4.5"><title>De acá viene la luz del sol en el mapa</title></circle>
+    </svg>`;
+  })();
+  const cpLetras = cpDial.querySelectorAll('.cp-letter');
+
+  const NOMBRES_VIENTO = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+  function actualizarBrujula() {
+    const thetaDeg = controls.getAzimuthalAngle() * 180 / Math.PI;
+    const phiDeg = controls.getPolarAngle() * 180 / Math.PI;
+    const rumbo = ((-thetaDeg % 360) + 360) % 360; // hacia dónde mira la cámara (0° = norte)
+    cpDial.style.transform = `rotate(${thetaDeg.toFixed(2)}deg)`;
+    cpLetras.forEach(l => { l.style.transform = `rotate(${(-thetaDeg).toFixed(2)}deg)`; }); // las letras quedan derechas
+    cpTilt.style.transform = `perspective(30em) rotateX(${(Math.min(phiDeg, 68) * 0.6).toFixed(1)}deg)`;
+    cpName.textContent = NOMBRES_VIENTO[Math.round(rumbo / 45) % 8];
+    cpDeg.textContent = (Math.round(rumbo) % 360) + '°';
+    cpSub.textContent = phiDeg < 4 ? 'Vista desde arriba' : 'Inclinación ' + Math.round(phiDeg) + '°';
+    cpBox.classList.toggle('alineado', rumbo < 3 || rumbo > 357);
+  }
+
+  // Giro suave hasta dejar el norte arriba (conserva distancia e inclinación)
+  let giroId = 0;
+  function orientarAlNorte() {
+    const miId = ++giroId;
+    const centro = controls.target.clone();
+    const sph = new THREE.Spherical().setFromVector3(new THREE.Vector3().subVectors(camera.position, centro));
+    const th0 = sph.theta;
+    if (Math.abs(th0) < 0.002) return;
+    const t0 = performance.now(), DUR = 700;
+    (function paso(now) {
+      if (miId !== giroId) return; // el usuario agarró el mapa: se cancela
+      const k = Math.min(1, (now - t0) / DUR);
+      const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      sph.theta = th0 * (1 - e);
+      camera.position.copy(centro).add(new THREE.Vector3().setFromSpherical(sph));
+      controls.update();
+      if (k < 1) requestAnimationFrame(paso);
+    })(t0);
+  }
+  cpBtn.addEventListener('click', orientarAlNorte);
+  cpBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); orientarAlNorte(); } });
+  renderer.domElement.addEventListener('pointerdown', () => { giroId++; });
+  controls.addEventListener('change', actualizarBrujula);
+  controls.update();
+  sidePanels.classList.add('show');
+  // En pantallas bajas o celulares la nota arranca cerrada para no ocupar lugar
+  const notaImg = document.getElementById('imgNote');
+  if (notaImg && (window.innerHeight < 820 || window.innerWidth <= 700)) notaImg.open = false;
   const reliefRange = document.getElementById('reliefRange');
   const reliefValue = document.getElementById('reliefValue');
   reliefRange.addEventListener('input', () => {
