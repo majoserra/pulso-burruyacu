@@ -697,16 +697,10 @@
   .intro-ping::after { animation-delay: 1.2s; }
   @keyframes introPing { 0% { transform: scale(.3); opacity: .9; } 100% { transform: scale(1.5); opacity: 0; } }
 
-  #introHint {
-    margin-top: .2rem; padding: .65em 1.4em; border-radius: 99px; cursor: pointer;
-    font-family: inherit; font-size: .9rem; font-weight: 600; color: var(--text);
-    background: rgba(255,105,180,.14); border: 1.5px solid var(--accent);
-    animation: introGlow 2s ease-in-out infinite; transition: transform .15s, background .15s;
-  }
-  #introHint b { color: var(--accent); }
-  #introHint:hover { background: rgba(255,105,180,.28); transform: scale(1.04); }
-  @keyframes introGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(255,105,180,.5); } 50% { box-shadow: 0 0 0 .7em rgba(255,105,180,0); } }
-
+  #introHint { margin: .2rem 0 0; font-size: .95rem; color: var(--text); animation: introBreathe 2.4s ease-in-out infinite; }
+  #introHint b { color: var(--accent); font-weight: 700; text-shadow: 0 0 14px rgba(255,105,180,.6); }
+  @keyframes introBreathe { 0%,100% { opacity: .6; } 50% { opacity: 1; } }
+  #splash.entrando #introHint { animation: none; }
   /* al entrar: el mapa se "zambulle" en Burruyacú y aparece el contador de años */
   #splash.entrando .intro-title, #splash.entrando .intro-tag, #splash.entrando #introHint, #splash.entrando .status-txt {
     opacity: 0; transition: opacity .4s ease; pointer-events: none;
@@ -726,13 +720,19 @@
   .il-year.tick { animation: ilTick .3s ease-out; }
   @keyframes ilTick { from { transform: translateY(.14em) scale(.94); opacity: .35; } to { transform: none; opacity: 1; } }
   #splash.esperando .il-year { animation: tlPulse 1s ease-in-out infinite; }
-  .il-track { width: var(--tw); height: .5rem; border-radius: 99px; background: rgba(128,128,128,.25); overflow: hidden; }
-  .il-fill {
-    height: 100%; width: 0; border-radius: 99px; transition: width .3s linear;
-    background: linear-gradient(90deg, #FF69B4, #FFA500, #FFFF00, #228B22, #90EE90, #8A2BE2, #FF4500, #D2B48C);
-    background-size: var(--tw) 100%;
+  .il-field { width: var(--tw); height: auto; display: block; overflow: visible; }
+  .il-ground { stroke: rgba(128,128,128,.45); stroke-width: 2; stroke-linecap: round; fill: none; }
+  .il-plant {
+    fill: #5fd38d; stroke: none; opacity: 0;
+    transform-box: fill-box; transform-origin: 50% 100%; transform: scale(.05);
+    transition: transform .55s cubic-bezier(.34,1.56,.64,1), opacity .25s ease;
   }
-  .il-ends { width: var(--tw); display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .il-plant .il-stalk { fill: none; stroke: #5fd38d; stroke-width: 3; stroke-linecap: round; }
+  .il-plant.on { transform: scale(1); opacity: 1; }
+  .il-lbl { fill: var(--muted); font-size: 8.5px; text-anchor: middle; font-variant-numeric: tabular-nums; opacity: 0; transition: opacity .4s ease; }
+  .il-lbl.on { opacity: 1; }
+  #splash.esperando .il-plant.on { animation: ilSway 1.8s ease-in-out infinite alternate; animation-delay: calc(var(--k) * -.25s); }
+  @keyframes ilSway { from { transform: scale(1) rotate(-3deg); } to { transform: scale(1) rotate(3deg); } }
   .il-text { color: var(--muted); font-size: .85rem; text-align: center; }
   
 </style>
@@ -770,14 +770,13 @@
       <div id="etiqueta">Burruyacú</div>
     </div>
 
-    <button id="introHint" type="button" onclick="entrar()">👆 Hacé click en <b>Burruyacú</b> para explorar</button>
+    <p id="introHint">Hacé click en <b>Burruyacú</b> para explorar</p>
     <div class="status-txt" id="statusSplash">Preparando el terreno…</div>
   </div>
 
   <div class="intro-loader">
     <div class="il-year" id="introYear">2018</div>
-    <div class="il-track"><div class="il-fill" id="introFill"></div></div>
-    <div class="il-ends"><span>2018</span><span>2026</span></div>
+    <svg class="il-field" id="introField" viewBox="0 0 260 100" aria-hidden="true"></svg>
     <div class="il-text" id="introLoaderText">Recorriendo la evolución del territorio…</div>
   </div>
 </div>
@@ -1153,16 +1152,33 @@ function ocultarEtiqueta() { document.getElementById('etiqueta').style.opacity =
   wrap.style.setProperty('--ox', x); wrap.style.setProperty('--oy', y);
 })();
 
+// Un cultivo por año: brota cuando el contador llega a ese año
+(function armarCampo() {
+  const campo = document.getElementById('introField');
+  if (!campo) return;
+  let html = '<path class="il-ground" d="M6 80H254"/>';
+  ANIOS_INTRO.forEach((a, k) => {
+    const x = 22 + k * 27;
+    html += `<g transform="translate(${x} 80)"><g class="il-plant" data-k="${k}" style="--k:${k}">
+      <path class="il-stalk" d="M0 0V-34"/>
+      <path d="M0 -20C-4 -32 -16 -35 -21 -33C-19 -23 -10 -19 0 -20Z"/>
+      <path d="M0 -20C4 -32 16 -35 21 -33C19 -23 10 -19 0 -20Z"/>
+      <path d="M0 -33C-5 -41 -3 -50 0 -54C3 -50 5 -42 0 -33Z"/>
+    </g></g><text class="il-lbl" data-k="${k}" x="${x}" y="95">${a}</text>`;
+  });
+  campo.innerHTML = html;
+})();
+
 function correrAnios(miRun) {
   const anioEl = document.getElementById('introYear');
-  const relleno = document.getElementById('introFill');
+  const campo = document.getElementById('introField');
   return new Promise((resolve) => {
     let i = 0;
     (function paso() {
       if (miRun !== runIdAnios) return resolve();
       anioEl.textContent = ANIOS_INTRO[i];
       anioEl.classList.remove('tick'); void anioEl.offsetWidth; anioEl.classList.add('tick'); // reinicia la animación
-      relleno.style.width = (i / (ANIOS_INTRO.length - 1) * 100) + '%';
+      campo.querySelectorAll('[data-k]').forEach(el => el.classList.toggle('on', Number(el.dataset.k) <= i));
       if (i < ANIOS_INTRO.length - 1) { i++; setTimeout(paso, MS_POR_ANIO); }
       else setTimeout(resolve, 500);
     })();
