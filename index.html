@@ -732,6 +732,54 @@
   #splash.esperando .il-plant.on { animation: ilSway 1.8s ease-in-out infinite alternate; animation-delay: calc(var(--k) * -.25s); }
   @keyframes ilSway { from { transform: scale(1) rotate(-3deg); } to { transform: scale(1) rotate(3deg); } }
   .il-text { color: var(--muted); font-size: .85rem; text-align: center; }
+
+  /* ===== Paneles ampliables (modo lectura) ===== */
+  #panelBackdrop {
+    position: fixed; inset: 0; z-index: 30; background: rgba(6,8,12,.62);
+    -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none; transition: opacity .25s ease;
+  }
+  #panelBackdrop.on { opacity: 1; pointer-events: auto; }
+  #leftStack.sube, #rightStack.sube { z-index: 31; } /* el panel ampliado queda por encima de todo */
+
+  .panel-expand, .panel-x {
+    display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
+    width: 2em; height: 2em; padding: 0; border: none; border-radius: 50%;
+    background: rgba(128,128,128,.28); color: var(--text); font-size: 1em; line-height: 1; cursor: pointer;
+    transition: background .15s, transform .15s;
+  }
+  .panel-expand:hover, .panel-x:hover { background: rgba(255,105,180,.4); transform: scale(1.08); }
+  .panel-expand svg { width: 1.05em; height: 1.05em; display: block; }
+  .panel-expand .ic-col { display: none; }
+  .expandido .panel-expand .ic-exp { display: none; }
+  .expandido .panel-expand .ic-col { display: block; }
+
+  /* ficha del cultivo: el botón va junto a la × */
+  #cropInfoPanel .panel-expand { position: absolute; top: 10px; right: calc(10px + 2.5em); z-index: 2; background: rgba(0,0,0,.6); color: #fff; }
+  #cropInfoPanel .panel-expand:hover { background: var(--accent); color: #1a1c1f; }
+
+  /* nota de imágenes: botón en el título; la × solo aparece ampliada */
+  .note-card summary .panel-expand { margin-left: auto; }
+  .note-card summary .panel-x { display: none; font-size: 1.2em; font-weight: 700; }
+  #imgNote.expandido summary .panel-x { display: flex; background: var(--accent); color: #1a1c1f; }
+  #imgNote.expandido summary::after { display: none; }
+  #imgNote.expandido summary { cursor: default; }
+  #cropInfoPanel.expandido .crop-info-close { background: var(--accent); color: #1a1c1f; }
+
+  /* el panel ampliado: centrado, más grande y con texto cómodo de leer */
+  #cropInfoPanel.expandido, #imgNote.expandido {
+    position: fixed; top: 50%; left: 50%; right: auto; bottom: auto; margin: 0; z-index: 1;
+    width: min(46em, 92vw); max-height: 88vh; max-height: 88dvh;
+    font-size: calc(var(--u) * 1.4); transform: translate(-50%, -50%);
+    box-shadow: 0 24px 80px rgba(0,0,0,.6); animation: panelIn .22s ease-out;
+  }
+  @keyframes panelIn {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(.94); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  #cropInfoPanel.expandido img, #imgNote.expandido .note-body img { height: 13em; }
+  #cropInfoPanel.expandido p { font-size: 1em; line-height: 1.65; }
+  #imgNote.expandido .note-body { font-size: 1em; line-height: 1.65; max-height: calc(88vh - 6em); max-height: calc(88dvh - 6em); }
   
 </style>
 </head>
@@ -1230,6 +1278,61 @@ document.getElementById('buildBtn').addEventListener('click', () => {
   construirEscena(filesLoaded.dem, serie);
 });
 
+// ================== Paneles ampliables (modo lectura) ==================
+const BTN_EXPANDIR = '<button type="button" class="panel-expand" aria-label="Ampliar o reducir este panel" title="Ampliar / reducir">'
+  + '<svg class="ic-exp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>'
+  + '<svg class="ic-col" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M3 21l7-7"/></svg></button>';
+
+(function iniciarPanelesAmpliables() {
+  const fondo = document.createElement('div');
+  fondo.id = 'panelBackdrop';
+  document.body.appendChild(fondo);
+
+  // la nota de imágenes es HTML fijo: le sumamos sus botones acá
+  const resumen = document.querySelector('#imgNote summary');
+  if (resumen) resumen.insertAdjacentHTML('beforeend', BTN_EXPANDIR + '<button type="button" class="panel-x" aria-label="Cerrar">×</button>');
+
+  let abierto = null; // panel que está ampliado ahora
+  const pilaDe = (p) => p.closest('#leftStack, #rightStack');
+
+  function ampliar(panel) {
+    if (abierto && abierto !== panel) contraer();
+    abierto = panel;
+    if (panel.id === 'imgNote') { panel.dataset.estabaAbierto = panel.open ? '1' : '0'; panel.open = true; }
+    panel.classList.add('expandido');
+    const pila = pilaDe(panel); if (pila) pila.classList.add('sube');
+    fondo.classList.add('on');
+  }
+  function contraer() {
+    if (!abierto) return;
+    const panel = abierto; abierto = null;
+    panel.classList.remove('expandido');
+    const pila = pilaDe(panel); if (pila) pila.classList.remove('sube');
+    if (panel.id === 'imgNote' && panel.dataset.estabaAbierto === '0') panel.open = false;
+    fondo.classList.remove('on');
+  }
+
+  // en fase de captura para poder interceptar la × antes de que esconda el panel
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    const btnExp = t.closest('.panel-expand');
+    if (btnExp) {
+      e.preventDefault(); e.stopPropagation();
+      const panel = btnExp.closest('#cropInfoPanel, #imgNote');
+      if (panel) { panel.classList.contains('expandido') ? contraer() : ampliar(panel); }
+      return;
+    }
+    // la × con el panel ampliado: reduce (no esconde) el panel
+    const btnX = t.closest('.crop-info-close, .panel-x');
+    if (btnX && abierto && abierto.contains(btnX)) { e.stopPropagation(); contraer(); return; }
+    // tocar el título de la nota ampliada no la pliega
+    if (t.closest('#imgNote.expandido summary')) e.preventDefault();
+  }, true);
+
+  fondo.addEventListener('click', contraer);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') contraer(); });
+})();
+
 // ================== AUTO-CARGA ==================
 // Si estos archivos existen junto al index.html (subidos a una carpeta "data/" del mismo
 // repo), la página los busca sola al abrirse y salta directo al 3D, sin pantalla de carga.
@@ -1664,7 +1767,7 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
     const productosHtml = (datos.productos && datos.productos.length)
       ? `<div class="crop-products-label">Principales productos</div><div class="crop-products">${datos.productos.map(p => `<span>${p}</span>`).join('')}</div>`
       : '';
-    panel.innerHTML = `<button class="crop-info-close" aria-label="Cerrar">×</button><img src="${datos.img}" alt="${nombre}" onerror="this.style.display='none'"><h3>${nombre}</h3><p>${datos.texto}</p>${productosHtml}`;
+    panel.innerHTML = `<button class="crop-info-close" aria-label="Cerrar">×</button>${BTN_EXPANDIR}<img src="${datos.img}" alt="${nombre}" onerror="this.style.display='none'"><h3>${nombre}</h3><p>${datos.texto}</p>${productosHtml}`;
     panel.querySelector('.crop-info-close').addEventListener('click', hideCropInfo);
     panel.classList.add('show');
   }
