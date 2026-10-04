@@ -550,6 +550,60 @@
     .cp-tip { display: none; }
   }
 
+  /* ===== Barras de scroll: del color del bloque, un poco más oscuras (nada de blanco) ===== */
+  :root { --sb-thumb: rgba(0,0,0,.42); --sb-thumb-hover: rgba(0,0,0,.62); }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { --sb-thumb: rgba(0,0,0,.2); --sb-thumb-hover: rgba(0,0,0,.34); }
+  }
+  :root[data-theme="light"] { --sb-thumb: rgba(0,0,0,.2); --sb-thumb-hover: rgba(0,0,0,.34); }
+  #cropInfoPanel, #rightStack, #cropList, #leftStack {
+    scrollbar-width: thin; scrollbar-color: var(--sb-thumb) transparent;
+  }
+  #cropInfoPanel::-webkit-scrollbar, #rightStack::-webkit-scrollbar, #cropList::-webkit-scrollbar { width: .55em; height: .55em; }
+  #cropInfoPanel::-webkit-scrollbar-track, #rightStack::-webkit-scrollbar-track, #cropList::-webkit-scrollbar-track,
+  #cropInfoPanel::-webkit-scrollbar-corner, #rightStack::-webkit-scrollbar-corner, #cropList::-webkit-scrollbar-corner { background: transparent; }
+  #cropInfoPanel::-webkit-scrollbar-thumb, #rightStack::-webkit-scrollbar-thumb, #cropList::-webkit-scrollbar-thumb {
+    background: var(--sb-thumb); border-radius: .5em; border: .12em solid transparent; background-clip: padding-box;
+  }
+  #cropInfoPanel::-webkit-scrollbar-thumb:hover, #rightStack::-webkit-scrollbar-thumb:hover, #cropList::-webkit-scrollbar-thumb:hover {
+    background: var(--sb-thumb-hover); background-clip: padding-box;
+  }
+
+  /* ===== Barra inferior: línea de tiempo + relieve en la misma fila ===== */
+  #bottomBar {
+    position: fixed; z-index: 11; font-size: var(--u);
+    left: var(--u); right: var(--u); bottom: calc(var(--u) + env(safe-area-inset-bottom, 0px));
+    max-width: 78em; margin: 0 auto;
+    display: flex; align-items: stretch; justify-content: flex-end; gap: .8em;
+    pointer-events: none;
+  }
+  #bottomBar > * { pointer-events: auto; }
+  #timeline { position: static; flex: 1 1 auto; min-width: 0; max-width: none; margin: 0; }
+
+  #reliefControl {
+    position: static; flex: 0 0 auto; width: 12.5em; box-sizing: border-box;
+    flex-direction: column; justify-content: flex-start;
+    padding: .8em 1.2em .6em; border-radius: 1.3em;
+    background: var(--panel); border: 1px solid rgba(128,128,128,0.22);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+  }
+  #reliefControl.show { display: flex; }
+  /* misma altura de cabecera que la línea de tiempo → los dos sliders quedan alineados */
+  #reliefControl label { display: flex; align-items: center; justify-content: space-between; gap: .6em; height: 1.7em; margin: 0 0 .3em; font-size: 1em; font-weight: 600; color: var(--muted); }
+  #reliefValue { color: var(--accent); font-weight: 800; font-variant-numeric: tabular-nums; }
+  #reliefControl input[type=range] { width: 100%; }
+
+  @media (max-width: 700px) {
+    #bottomBar { left: calc(var(--u) * .9); right: calc(var(--u) * .9); bottom: calc(var(--u) * .9 + env(safe-area-inset-bottom, 0px)); }
+    /* en celular el relieve queda arriba a la izquierda para no apretar la barra de años */
+    #reliefControl {
+      position: fixed; left: calc(var(--u) * .9); right: auto; bottom: auto; width: auto;
+      top: calc(var(--u) * 12 + env(safe-area-inset-top, 0px)); padding: .6em .9em;
+    }
+    #reliefControl input[type=range] { width: 10em; }
+  }
+
 </style>
 </head>
 <body>
@@ -619,10 +673,7 @@
   <div id="info"></div>
 </div>
 
-<div id="reliefControl">
-  <label>Relieve <span id="reliefValue">1.0x</span></label>
-  <input type="range" id="reliefRange" min="1" max="3" step="0.1" value="1">
-</div>
+
 <div id="rightStack">
   <div id="hint" style="cursor:pointer" onclick="document.getElementById('tutorial').classList.add('show')" title="Ver el tutorial de nuevo">Arrastrá para rotar · rueda para zoom · pasá el mouse para identificar el cultivo · hacé click para marcar el punto y ver la superficie · (tocá acá para ver la ayuda)</div>
   <div id="sidePanels">
@@ -639,27 +690,33 @@
     <details id="imgNote" class="side-card note-card" open>
       <summary>🛰️ Sobre las imágenes satelitales</summary>
       <div class="note-body">
-        <p>Los mapas de cada año se obtienen <b>clasificando imágenes satelitales</b> del territorio: son las imágenes que usamos como base de todo lo que ves acá.</p>
-        <p>Si aparecen <b>huecos</b> sin clasificar es porque había <b>nubes</b> cuando el satélite pasó: tapan el suelo y no se puede identificar el cultivo. También pueden ser rutas, ciudades o ríos.</p>
         <figure>
-          <img src="img/nubes.JPG" alt="Imagen satelital con nubes" onerror="this.parentElement.style.display='none'">
+          <img src="img/nubes.jpg" alt="Imagen satelital con nubes" onerror="this.parentElement.style.display='none'">
           <figcaption>Ejemplo: imagen satelital con nubes</figcaption>
         </figure>
+        <p>Los mapas de cada año se obtienen <b>clasificando imágenes satelitales</b> del territorio: son las imágenes que usamos como base de todo lo que ves acá.</p>
+        <p>Si aparecen <b>huecos</b> sin clasificar es porque había <b>nubes</b> cuando el satélite pasó: tapan el suelo y no se puede identificar el cultivo. También pueden ser rutas, ciudades o ríos.</p>
         <div class="note-legend"><span class="note-sw"></span> Gris = sin clasificar</div>
       </div>
     </details>
   </div>
 </div>
 
-<div id="timeline">
-  <button id="tlPlay" class="tl-play" type="button" aria-label="Reproducir la evolución">▶</button>
-  <div class="tl-main">
-    <div class="tl-head">
-      <span class="tl-year" id="tlYear">—</span>
-      <span class="tl-sub" id="tlSub"></span>
+<div id="bottomBar">
+  <div id="timeline">
+    <button id="tlPlay" class="tl-play" type="button" aria-label="Reproducir la evolución">▶</button>
+    <div class="tl-main">
+      <div class="tl-head">
+        <span class="tl-year" id="tlYear">—</span>
+        <span class="tl-sub" id="tlSub"></span>
+      </div>
+      <input type="range" id="tlRange" min="0" max="1" step="1" value="0" aria-label="Año">
+      <div class="tl-ticks" id="tlTicks"></div>
     </div>
-    <input type="range" id="tlRange" min="0" max="1" step="1" value="0" aria-label="Año">
-    <div class="tl-ticks" id="tlTicks"></div>
+  </div>
+  <div id="reliefControl">
+    <label>Relieve <span id="reliefValue">1.0x</span></label>
+    <input type="range" id="reliefRange" min="1" max="3" step="0.1" value="1">
   </div>
 </div>
   
@@ -1023,7 +1080,8 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
 
   const wrap = document.getElementById('canvas-wrap');
   const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
-  camera.position.set(0, 130, 220);
+  const distIni = Math.max(planeW, planeH) * 0.95; // distancia inicial de la cámara: más chico = más zoom
+  camera.position.set(0, distIni * 0.55, distIni * 0.83);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
