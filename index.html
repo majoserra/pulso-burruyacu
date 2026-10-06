@@ -1392,6 +1392,7 @@ const BTN_EXPANDIR = '<button type="button" class="panel-expand" aria-label="Amp
 };
   const DATA_SOURCES = {
   dem: 'data/dem_burruyacu.tif',
+  superficies: 'data/superficies.json',
   serie: [
     { anio: 2018, clasif: 'data/clasificacion_limpia_2018_v2.tif', areas: 'data/areas_por_clase_2018.json' },
     { anio: 2019, clasif: 'data/clasificacion_limpia_2019.tif',    areas: 'data/areas_por_clase_2019.json' },
@@ -1429,19 +1430,39 @@ async function intentarAutoCarga() {
     document.getElementById('dropzone').classList.remove('hidden');
     return;
   }
-  // Un solo JSON con todos los años → { "2018": {1: %, 2: %, ...}, ... }
+
+  // Un solo JSON con todos los años → tabla { "2019": {1: %, 2: %, ...}, ... }
   const tabla = {};
   try {
-    const lista = await (await fetch('data/superficies.json')).json();
+    const resp = await fetch(DATA_SOURCES.superficies);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    let lista = await resp.json();
+    if (!Array.isArray(lista)) lista = lista.anios || Object.values(lista);
     lista.forEach(r => {
+      const total = r.cultivos.reduce((s, c) => s + (Number(c.superficie_ha) || 0), 0);
       const o = {};
-      r.cultivos.forEach(c => { o[String(c.clase)] = c.participacion_porcentaje; });
+      r.cultivos.forEach(c => {
+        o[String(c.clase)] = (c.participacion_porcentaje != null)
+          ? Number(c.participacion_porcentaje)
+          : (total ? Number(c.superficie_ha) / total * 100 : 0);
+      });
       tabla[String(r.anio)] = o;
     });
-  } catch (e) { console.warn('[auto-carga] no se pudo leer data/superficies.json', e.message); }
-  const serie = disponibles.map(s => ({ anio: String(s.anio), clasif: s.clasif, areas: tabla[String(s.anio)] || null }));
+    console.log('[superficies] años leídos:', Object.keys(tabla).join(', '));
+  } catch (e) {
+    console.error('[superficies] no se pudo leer', DATA_SOURCES.superficies, '→', e.message);
+  }
+
+  const serie = disponibles.map(s => ({
+    anio: String(s.anio),
+    clasif: s.clasif,
+    areas: tabla[String(s.anio)] || null
+  }));
+  serie.forEach(s => { if (!s.areas) console.warn('[superficies] sin datos para', s.anio); });
+
   construirEscena(DATA_SOURCES.dem, serie);
 }
+  
 intentarAutoCarga();
 
 function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, indiceInicial) {
