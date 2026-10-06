@@ -821,12 +821,16 @@
     body.playing #leftStack, body.playing #rightStack { display: none; }
   }
 
-  /* ===== TOUR INTERACTIVO ===== */
+
+/* ===== TOUR INTERACTIVO ===== */
   #tourHighlight {
     position: fixed; z-index: 9997;
     border-radius: 16px;
-    /* El truco: una sombra gigante que oscurece el fondo y un borde rosa */
-    box-shadow: 0 0 0 9999px rgba(6, 8, 12, 0.75), 0 0 0 2px var(--accent), 0 0 15px rgba(255,105,180,0.4);
+    /* Oscurece el fondo + borde 3px + resplandor neón doble */
+    box-shadow: 0 0 0 9999px rgba(6, 8, 12, 0.75), 
+                0 0 0 3px var(--accent), 
+                0 0 25px rgba(255,105,180,0.85), 
+                0 0 50px rgba(255,105,180,0.5);
     pointer-events: auto; /* Evita clics en la app mientras dura el tutorial */
     transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     display: none;
@@ -996,7 +1000,7 @@
   </div>
   <div id="reliefControl">
     <label>Relieve <span id="reliefValue">1.0x</span></label>
-    <input type="range" id="reliefRange" min="1" max="3" step="0.1" value="1">
+    <input type="range" id="reliefRange" min="1" max="2" step="0.1" value="1">
   </div>
 </div>
 
@@ -1016,8 +1020,7 @@
     <h1>Explorá Burruyacú</h1>
     <div class="step"><span class="emoji">🖱️</span><div><b>Rotá el territorio</b><span class="desc">Arrastrá para cambiar la perspectiva, rueda para hacer zoom.</span></div></div>
     <div class="step"><span class="emoji">📍</span><div><b>Hacé click en el mapa</b><span class="desc">Para descubrir la superficie y la elevación de un punto exacto.</span></div></div>
-    <div class="step"><span class="emoji">⛰️</span><div><b>Ajustá el relieve</b><span class="desc">Con el control de abajo, podés exagerar el terreno hasta 3x.</span></div></div>
-    
+    <div class="step"><span class="emoji">⛰️</span><div><b>Ajustá el relieve</b><span class="desc">Con el control de abajo, podés exagerar el terreno hasta 2x.</span></div></div>
     <div style="display:flex; gap:10px; margin-top:20px;">
       <button style="flex:1; padding:10px; background:none; border:1px solid rgba(128,128,128,0.4); color:var(--muted); border-radius:10px; cursor:pointer;" onclick="document.getElementById('tutorial').classList.remove('show'); try { localStorage.setItem('burruyacu_tutorial_visto', '1'); } catch (e) {}">Omitir</button>
       <button id="tutorialCloseBtn" style="flex:2; padding:10px; border:none; border-radius:10px; background:var(--accent); color:#1a1c1f; font-weight:600; font-size:0.9rem; cursor:pointer;" onclick="iniciarTour()">Hacer recorrido guiado</button>
@@ -2252,6 +2255,7 @@ async function alternarReproduccion() {
 }
 
   // ===== TOUR INTERACTIVO =====
+// ===== TOUR INTERACTIVO =====
 const tourSteps = [
   {
     target: '#sidebar',
@@ -2271,6 +2275,11 @@ const tourSteps = [
   {
     target: '#timeline',
     text: '<b>4. Línea de tiempo</b><br>Viajá en el tiempo dándole Play (▶) para ver cómo cambian los cultivos en la historia, o arrastrá el control al año que quieras.',
+    pos: 'top'
+  },
+  {
+    target: '#reliefControl',
+    text: '<b>5. Ajustar el relieve</b><br>Con esta barra podés exagerar la altura del terreno hasta 2x para apreciar mejor las montañas.',
     pos: 'top'
   }
 ];
@@ -2309,13 +2318,24 @@ function mostrarPasoTour(index) {
   }
 
   const rect = el.getBoundingClientRect();
-  const pad = 8; // Espaciado del borde resaltado
+  const isMobile = window.innerWidth <= 700;
+  const pad = isMobile ? 4 : 8; // Menos margen en celular para que no se desborde
   
-  // Envolvemos el elemento objetivo con nuestro recuadro brillante
-  tourHighlight.style.top = (rect.top - pad) + 'px';
-  tourHighlight.style.left = (rect.left - pad) + 'px';
-  tourHighlight.style.width = (rect.width + pad * 2) + 'px';
-  tourHighlight.style.height = (rect.height + pad * 2) + 'px';
+  // Cálculos seguros para la cajita brillante (evita desbordes)
+  let hlLeft = rect.left - pad;
+  let hlTop = rect.top - pad;
+  let hlWidth = rect.width + pad * 2;
+  let hlHeight = rect.height + pad * 2;
+
+  if (hlLeft < 0) { hlWidth += hlLeft; hlLeft = 0; }
+  if (hlLeft + hlWidth > window.innerWidth) { hlWidth = window.innerWidth - hlLeft; }
+  if (hlTop < 0) { hlHeight += hlTop; hlTop = 0; }
+  if (hlTop + hlHeight > window.innerHeight) { hlHeight = window.innerHeight - hlTop; }
+
+  tourHighlight.style.top = hlTop + 'px';
+  tourHighlight.style.left = hlLeft + 'px';
+  tourHighlight.style.width = hlWidth + 'px';
+  tourHighlight.style.height = hlHeight + 'px';
 
   tourText.innerHTML = step.text;
   document.getElementById('tourNext').textContent = index === tourSteps.length - 1 ? '¡Listo!' : 'Siguiente';
@@ -2325,10 +2345,14 @@ function mostrarPasoTour(index) {
   let top = 0;
   let left = 0;
 
-  if (window.innerWidth <= 700) {
-    // En celulares, mostramos la cajita fija abajo para que sea más cómodo
-    top = window.innerHeight - 150;
-    left = window.innerWidth / 2 - boxW / 2;
+  if (isMobile) {
+    // En celulares: si resalta algo arriba, el texto va abajo. Si resalta abajo, el texto va arriba.
+    left = (window.innerWidth / 2) - (boxW / 2);
+    if (rect.top > window.innerHeight / 2) {
+      top = 20; 
+    } else {
+      top = window.innerHeight - 200; 
+    }
   } else {
     // En computadoras, la cajita persigue al elemento resaltado
     if (step.pos === 'bottom') {
@@ -2343,7 +2367,7 @@ function mostrarPasoTour(index) {
     }
   }
 
-  // Evitamos que la ventanita se salga de la pantalla
+  // Evitamos que la ventanita de texto se salga de la pantalla
   left = Math.max(10, Math.min(left, window.innerWidth - boxW - 10));
   top = Math.max(10, Math.min(top, window.innerHeight - 150));
 
