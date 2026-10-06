@@ -1397,8 +1397,7 @@ const BTN_EXPANDIR = '<button type="button" class="panel-expand" aria-label="Amp
   '2022': 'La soja tiene su mejor año: nunca había ocupado tanto terreno.',
   '2023': 'La caña da su salto más marcado hasta acá y retoma protagonismo en el territorio.',
   '2024': 'La caña alcanza su punto más alto de la serie. El citrus también crece, mientras la soja cede lugar.',
-  '2025': 'Todavía no hay clasificación disponible para esta campaña.',
-  '2026': 'El monte nativo llega a su mínimo histórico. El maíz tiene su mejor año, y la soja vuelve a crecer.'
+  '2026': 'El monte nativo llega a su mínimo histórico. El maíz tiene su mejor año, y la soja vuelve a crecer.<br><span style="font-size:0.85em; color:var(--muted); display:flex; align-items:start; gap:8px; margin-top:12px; padding:10px; background:rgba(128,128,128,0.15); border-radius:8px; border-left:3px solid var(--accent);"><span>☁️️</span><span><b>Salto temporal:</b> No se encontró una imagen satelital óptima y libre de nubes para clasificar la campaña 2025 (<i>+info en el panel derecho "Sobre las imágenes satelitales"</i>).</span></span>'
 };
   const DATA_SOURCES = {
   dem: 'data/dem_burruyacu.tif',
@@ -1735,10 +1734,8 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
     });
   }
 
-  function actualizarHistoria(i) {
-    // Le agregamos "Actualidad - 2026" al texto del último año
+function actualizarHistoria(i) {
     let txt = NARRATIVA_ANIO[serie[i].anio] || '';
-    if (serie[i].anio === "2026") txt = "Actualidad - 2026. " + txt;
 
     clearTimeout(storyTimer);
     actualizarGrafico(i);
@@ -1750,11 +1747,14 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
       storyEl.classList.add('show');
     }
 
-    if (storyText.textContent === txt) { storyText.classList.remove('out'); return; }
+    // Usamos innerHTML en vez de textContent para que renderice el recuadro HTML de 2025
+    if (storyText.innerHTML === txt) { storyText.classList.remove('out'); return; }
     storyText.classList.add('out');
-    storyTimer = setTimeout(() => { storyText.textContent = txt; storyText.classList.remove('out'); }, 450);
+    storyTimer = setTimeout(() => { 
+      storyText.innerHTML = txt; 
+      storyText.classList.remove('out'); 
+    }, 450);
   }
-
   // Al dar play se cargan todos los años antes de empezar, para que no haya cortes al leer
   async function precargarTodos(miId) {
     for (let i = 0; i < serie.length; i++) {
