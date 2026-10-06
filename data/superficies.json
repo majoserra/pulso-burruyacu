@@ -1,0 +1,148 @@
+[
+  [
+  {
+    "anio": 2018,
+    "total_hectareas": null,
+    "cultivos": [
+      { "clase": 1, "participacion_porcentaje": 10.24 },
+      { "clase": 2, "participacion_porcentaje": 2.39 },
+      { "clase": 3, "participacion_porcentaje": 10.89 },
+      { "clase": 4, "participacion_porcentaje": 47.76 },
+      { "clase": 5, "participacion_porcentaje": 0.03 },
+      { "clase": 6, "participacion_porcentaje": 28.50 },
+      { "clase": 7, "participacion_porcentaje": 0.00 },
+      { "clase": 8, "participacion_porcentaje": 0.18 }
+    ]
+  },
+  {
+    "anio": 2019,
+    "total_hectareas": 371785.29,
+    "cultivos": [
+      {
+        "clase": 1,
+        "superficie_ha": 34011.14,
+        "participacion_porcentaje": 9.15
+      },
+      {
+        "clase": 2,
+        "superficie_ha": 22394.43,
+        "participacion_porcentaje": 6.02
+      },
+      {
+        "clase": 3,
+        "superficie_ha": 29189.49,
+        "participacion_porcentaje": 7.85
+      },
+      {
+        "clase": 4,
+        "superficie_ha": 204623.48,
+        "participacion_porcentaje": 55.04
+      },
+      {
+        "clase": 5,
+        "superficie_ha": 90.59,
+        "participacion_porcentaje": 0.02
+      },
+      {
+        "clase": 6,
+        "superficie_ha": 81311.16,
+        "participacion_porcentaje": 21.87
+      },
+      {
+        "clase": 7,
+        "superficie_ha": 0.22,
+        "participacion_porcentaje": 0.01
+      },
+      {
+        "clase": 8,
+        "superficie_ha": 164.78,
+        "participacion_porcentaje": 0.04
+      }
+    ]
+  }
+  ,
+  {
+    "anio": 2020,
+    "total_hectareas": 369256.06,
+    "cultivos": [
+      { "clase": 1, "superficie_ha": 43583.56, "participacion_porcentaje": 11.80 },
+      { "clase": 2, "superficie_ha": 28191.67, "participacion_porcentaje": 7.63 },
+      { "clase": 3, "superficie_ha": 27175.14, "participacion_porcentaje": 7.36 },
+      { "clase": 4, "superficie_ha": 186808.34, "participacion_porcentaje": 50.59 },
+      { "clase": 5, "superficie_ha": 337.95, "participacion_porcentaje": 0.09 },
+      { "clase": 6, "superficie_ha": 82775.44, "participacion_porcentaje": 22.42 },
+      { "clase": 7, "superficie_ha": 0.00, "participacion_porcentaje": 0.00 },
+      { "clase": 8, "superficie_ha": 383.96, "participacion_porcentaje": 0.10 }
+    ]
+  },
+  {
+    "anio": 2021,
+    "total_hectareas": 371859.61,
+    "cultivos": [
+      { "clase": 1, "superficie_ha": 50307.16, "participacion_porcentaje": 13.53 },
+      { "clase": 2, "superficie_ha": 25768.89, "participacion_porcentaje": 6.93 },
+      { "clase": 3, "superficie_ha": 39089.35, "participacion_porcentaje": 10.51 },
+      { "clase": 4, "superficie_ha": 176953.66, "participacion_porcentaje": 47.59 },
+      { "clase": 5, "superficie_ha": 65.09, "participacion_porcentaje": 0.02 },
+      { "clase": 6, "superficie_ha": 78752.90, "participacion_porcentaje": 21.18 },
+      { "clase": 7, "superficie_ha": 0.47, "participacion_porcentaje": 0.00 },
+      { "clase": 8, "superficie_ha": 922.09, "participacion_porcentaje": 0.25 }
+    ]
+  },
+  {
+    "anio": 2022,
+    "total_hectareas": 372734.50,
+    "cultivos": [
+      { "clase": 1, "superficie_ha": 46429.58, "participacion_porcentaje": 12.46 },
+      { "clase": 2, "superficie_ha": 23250.52, "participacion_porcentaje": 6.24 },
+      { "clase": 3, "superficie_ha": 28680.82, "participacion_porcentaje": 7.69 },
+      { "clase": 4, "superficie_ha": 174701.05, "participacion_porcentaje": 46.87 },
+      { "clase": 5, "superficie_ha": 117.35, "participacion_porcentaje": 0.03 },
+      { "clase": 6, "superficie_ha": 99457.14, "participacion_porcentaje": 26.68 },
+      { "clase": 7, "superficie_ha": 0.04, "participacion_porcentaje": 0.00 },
+      { "clase": 8, "superficie_ha": 98.00, "participacion_porcentaje": 0.03 }
+    ]
+  },
+  {
+    "anio": 2023,
+    "total_hectareas": 363614.55,
+    "cultivos": [
+      { "clase": 1, "superficie_ha": 60339.83, "participacion_porcentaje": 16.60 },
+      { "clase": 2, "superficie_ha": 23766.39, "participacion_porcentaje": 6.54 },
+      { "clase": 3, "superficie_ha": 30004.28, "participacion_porcentaje": 8.25 },
+      { "clase": 4, "superficie_ha": 163757.18, "participacion_porcentaje": 45.04 },
+      { "clase": 5, "superficie_ha": 596.34, "participacion_porcentaje": 0.16 },
+      { "clase": 6, "superficie_ha": 84595.51, "participacion_porcentaje": 23.26 },
+      { "clase": 7, "superficie_ha": 0.47, "participacion_porcentaje": 0.00 },
+      { "clase": 8, "superficie_ha": 554.55, "participacion_porcentaje": 0.15 }
+    ]
+  },
+  {
+    "anio": 2024,
+    "total_hectareas": 363011.34,
+    "cultivos": [
+      { "clase": 1, "superficie_ha": 70089.82, "participacion_porcentaje": 19.31 },
+      { "clase": 2, "superficie_ha": 34204.64, "participacion_porcentaje": 9.42 },
+      { "clase": 3, "superficie_ha": 29968.09, "participacion_porcentaje": 8.26 },
+      { "clase": 4, "superficie_ha": 162191.23, "participacion_porcentaje": 44.68 },
+      { "clase": 5, "superficie_ha": 1983.72, "participacion_porcentaje": 0.55 },
+      { "clase": 6, "superficie_ha": 64278.84, "participacion_porcentaje": 17.71 },
+      { "clase": 7, "superficie_ha": 25.59, "participacion_porcentaje": 0.01 },
+      { "clase": 8, "superficie_ha": 269.41, "participacion_porcentaje": 0.07 }
+    ]
+  },
+  {
+    "anio": 2026,
+    "total_hectareas": 379879.97,
+    "cultivos": [
+      { "clase": 1, "superficie_ha": 63197.74, "participacion_porcentaje": 16.64 },
+      { "clase": 2, "superficie_ha": 36000.24, "participacion_porcentaje": 9.48 },
+      { "clase": 3, "superficie_ha": 51695.97, "participacion_porcentaje": 13.61 },
+      { "clase": 4, "superficie_ha": 147317.23, "participacion_porcentaje": 38.78 },
+      { "clase": 5, "superficie_ha": 76.46, "participacion_porcentaje": 0.02 },
+      { "clase": 6, "superficie_ha": 81265.24, "participacion_porcentaje": 21.39 },
+      { "clase": 7, "superficie_ha": 221.29, "participacion_porcentaje": 0.06 },
+      { "clase": 8, "superficie_ha": 105.80, "participacion_porcentaje": 0.03 }
+    ]
+  }
+]
