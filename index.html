@@ -789,9 +789,18 @@
     font-size: var(--u); box-sizing: border-box;
     background: var(--panel); border: 1px solid rgba(128,128,128,0.22); border-radius: 1.2em;
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-    box-shadow: 0 8px 28px rgba(0,0,0,0.3); padding: 1em 1.2em;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.3); 
+    padding: 1em 2em 1em 1.2em;
     opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility .6s;
   }
+  /* NUEVO: Estilo para la crucecita de cerrar */
+  #cerrarHistoria {
+    position: absolute; top: 6px; right: 10px;
+    background: none; border: none; color: var(--muted);
+    font-size: 1.4em; cursor: pointer; padding: 0; line-height: 1;
+    transition: color .15s, transform .15s;
+  }
+  #cerrarHistoria:hover { color: var(--text); transform: scale(1.1); }
   #story.show { opacity: 1; visibility: visible; }
   #storyText { margin: 0; font-size: 1.1em; line-height: 1.55; transition: opacity .45s ease, transform .45s ease; }
   #storyText.out { opacity: 0; transform: translateY(.4em); }
@@ -962,6 +971,7 @@
 </div>
 
 <div id="story">
+  <button id="cerrarHistoria" aria-label="Cerrar historia" title="Cerrar panel">×</button>
   <p id="storyText"></p>
   <div id="storyGraph" class="sin-grafico">
     <div class="st-head"><span id="storyChartTitle"></span><span>◀ menos · más ▶</span></div>
@@ -1682,8 +1692,18 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
   const storyGraph = document.getElementById('storyGraph');
   const storyChart = document.getElementById('storyChart');
   const storyChartTitle = document.getElementById('storyChartTitle');
+  const btnCerrarHistoria = document.getElementById('cerrarHistoria');
+  
   const CLASES_GRAFICO = [1, 2, 3, 4, 6]; // caña, citrus, maíz, monte, soja
   let maxCambio = 1, storyTimer = 0;
+  let historiaCerradaPorUsuario = true; // Arranca oculta al cargar la página
+
+  if (btnCerrarHistoria) {
+    btnCerrarHistoria.addEventListener('click', () => {
+      historiaCerradaPorUsuario = true;
+      storyEl.classList.remove('show');
+    });
+  }
 
   function crearGrafico() {
     storyChart.innerHTML = CLASES_GRAFICO.map(c => `
@@ -1716,10 +1736,20 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
   }
 
   function actualizarHistoria(i) {
-    const txt = NARRATIVA_ANIO[serie[i].anio] || '';
+    // Le agregamos "Actualidad - 2026" al texto del último año
+    let txt = NARRATIVA_ANIO[serie[i].anio] || '';
+    if (serie[i].anio === "2026") txt = "Actualidad - 2026. " + txt;
+
     clearTimeout(storyTimer);
-    storyEl.classList.toggle('show', !!txt);
     actualizarGrafico(i);
+    
+    // Si la historia fue cerrada o no hay texto, la ocultamos
+    if (!txt || historiaCerradaPorUsuario) {
+      storyEl.classList.remove('show');
+    } else {
+      storyEl.classList.add('show');
+    }
+
     if (storyText.textContent === txt) { storyText.classList.remove('out'); return; }
     storyText.classList.add('out');
     storyTimer = setTimeout(() => { storyText.textContent = txt; storyText.classList.remove('out'); }, 450);
@@ -1738,8 +1768,12 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
     pintarTimeline();
   }
 
-  async function alternarReproduccion() {
+async function alternarReproduccion() {
     if (reproduciendo) { detenerReproduccion(); return; }
+    
+    // NUEVO: Indicamos que se debe mostrar el panel de la historia
+    historiaCerradaPorUsuario = false; 
+    
     reproduciendo = true;
     const miId = ++reproId;
     pintarTimeline();
@@ -1770,10 +1804,23 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
       t.className = 'tl-tick';
       t.textContent = s.anio;
       t.style.left = (i / (serie.length - 1) * 100) + '%';
-      t.addEventListener('click', () => { detenerReproduccion(); irAIndice(i); });
+      
+      // NUEVO: Agregamos historiaCerradaPorUsuario = false al hacer click en el año
+      t.addEventListener('click', () => { 
+        historiaCerradaPorUsuario = false;
+        detenerReproduccion(); 
+        irAIndice(i); 
+      });
       tlTicks.appendChild(t);
     });
-    tlRange.addEventListener('input', () => { detenerReproduccion(); irAIndice(Number(tlRange.value)); });
+    
+    // NUEVO: Agregamos historiaCerradaPorUsuario = false al arrastrar el slider
+    tlRange.addEventListener('input', () => { 
+      historiaCerradaPorUsuario = false;
+      detenerReproduccion(); 
+      irAIndice(Number(tlRange.value)); 
+    });
+    
     tlPlay.addEventListener('click', alternarReproduccion);
     crearGrafico();
     actualizarHistoria(indiceActivo);
