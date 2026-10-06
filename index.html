@@ -780,6 +780,37 @@
   #cropInfoPanel.expandido img, #imgNote.expandido .note-body img { height: 13em; }
   #cropInfoPanel.expandido p { font-size: 1em; line-height: 1.65; }
   #imgNote.expandido .note-body { font-size: 1em; line-height: 1.65; max-height: calc(88vh - 6em); max-height: calc(88dvh - 6em); }
+
+    /* ===== HISTORIA + GRÁFICO DE CAMBIO ===== */
+  #story {
+    position: fixed; z-index: 10; left: 50%; transform: translateX(-50%);
+    bottom: calc(var(--u) * 9.5 + env(safe-area-inset-bottom, 0px));
+    width: max(20em, min(36em, calc(100vw - var(--u) * 52)));
+    font-size: var(--u); box-sizing: border-box;
+    background: var(--panel); border: 1px solid rgba(128,128,128,0.22); border-radius: 1.2em;
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.3); padding: 1em 1.2em;
+    opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility .6s;
+  }
+  #story.show { opacity: 1; visibility: visible; }
+  #storyText { margin: 0; font-size: 1.1em; line-height: 1.55; transition: opacity .45s ease, transform .45s ease; }
+  #storyText.out { opacity: 0; transform: translateY(.4em); }
+  #storyGraph { margin-top: .9em; padding-top: .7em; border-top: 1px solid rgba(128,128,128,.2); }
+  #storyGraph.sin-grafico { display: none; }
+  .st-head { display: flex; justify-content: space-between; gap: .8em; font-size: .8em; color: var(--muted); }
+  .st-row { display: grid; grid-template-columns: 8em 1fr; gap: .6em; align-items: center; margin-top: .4em; }
+  .st-name { font-size: .85em; color: var(--muted); white-space: nowrap; }
+  .st-name i { display: inline-block; width: .7em; height: .7em; border-radius: .2em; margin-right: .45em; }
+  .st-track { position: relative; height: .6em; border-radius: .3em; background: rgba(128,128,128,.15); }
+  .st-track::after { content: ''; position: absolute; left: 50%; top: -.2em; bottom: -.2em; width: 1px; background: rgba(128,128,128,.6); }
+  .st-bar { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; border-radius: .3em;
+            transition: left 1.4s ease, width 1.4s ease; }
+
+  @media (max-width: 700px) {
+    #story { width: calc(100vw - var(--u) * 1.8); bottom: calc(var(--u) * 9.8 + env(safe-area-inset-bottom, 0px)); }
+    body:not(.playing) #story { display: none; }
+    body.playing #leftStack, body.playing #rightStack { display: none; }
+  }
   
 </style>
 </head>
@@ -927,6 +958,14 @@
   <div id="reliefControl">
     <label>Relieve <span id="reliefValue">1.0x</span></label>
     <input type="range" id="reliefRange" min="1" max="3" step="0.1" value="1">
+  </div>
+</div>
+
+<div id="story">
+  <p id="storyText"></p>
+  <div id="storyGraph" class="sin-grafico">
+    <div class="st-head"><span id="storyChartTitle"></span><span>◀ menos · más ▶</span></div>
+    <div id="storyChart"></div>
   </div>
 </div>
   
@@ -1340,7 +1379,18 @@ const BTN_EXPANDIR = '<button type="button" class="panel-expand" aria-label="Amp
 // simplemente vuelve al modo manual (arrastrar y soltar), sin romperse ni mostrar error.
 // Subí los .tif y .json de cada año a la carpeta "data/" del repo y ajustá los nombres de acá.
 // Si algún año no existe, se saltea; si falta el DEM o no hay ningún año, vuelve al modo manual.
-const DATA_SOURCES = {
+  const NARRATIVA_ANIO = {
+  '2018': 'El punto de partida. El monte nativo resguarda la mitad del territorio, mientras que la soja impone un dominio absoluto en los campos.',
+  '2019': 'El monte nativo todavía cubre más de la mitad de Burruyacú; la soja es el cultivo que más terreno ocupa.',
+  '2020': 'El monte empieza a ceder terreno. La caña gana sus primeros metros.',
+  '2021': 'El monte cae por primera vez por debajo de la mitad del territorio. El maíz se expande con fuerza.',
+  '2022': 'La soja tiene su mejor año: nunca había ocupado tanto terreno.',
+  '2023': 'La caña da su salto más marcado hasta acá y retoma protagonismo en el territorio.',
+  '2024': 'La caña alcanza su punto más alto de la serie. El citrus también crece, mientras la soja cede lugar.',
+  '2025': 'Todavía no hay clasificación disponible para esta campaña.',
+  '2026': 'El monte nativo llega a su mínimo histórico. El maíz tiene su mejor año, y la soja vuelve a crecer.'
+};
+  const DATA_SOURCES = {
   dem: 'data/dem_burruyacu.tif',
   serie: [
     { anio: 2018, clasif: 'data/clasificacion_limpia_2018_v2.tif', areas: 'data/areas_por_clase_2018.json' },
@@ -1379,14 +1429,17 @@ async function intentarAutoCarga() {
     document.getElementById('dropzone').classList.remove('hidden');
     return;
   }
-  const serie = await Promise.all(disponibles.map(async (s) => {
-    let areas = null;
-    if (s.areas) {
-      try { areas = await (await fetch(s.areas)).json(); }
-      catch (e) { console.warn('[auto-carga] no se pudo leer', s.areas, e.message); }
-    }
-    return { anio: String(s.anio), clasif: s.clasif, areas };
-  }));
+  // Un solo JSON con todos los años → { "2018": {1: %, 2: %, ...}, ... }
+  const tabla = {};
+  try {
+    const lista = await (await fetch('data/superficies.json')).json();
+    lista.forEach(r => {
+      const o = {};
+      r.cultivos.forEach(c => { o[String(c.clase)] = c.participacion_porcentaje; });
+      tabla[String(r.anio)] = o;
+    });
+  } catch (e) { console.warn('[auto-carga] no se pudo leer data/superficies.json', e.message); }
+  const serie = disponibles.map(s => ({ anio: String(s.anio), clasif: s.clasif, areas: tabla[String(s.anio)] || null }));
   construirEscena(DATA_SOURCES.dem, serie);
 }
 intentarAutoCarga();
@@ -1486,17 +1539,7 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
     return areas ? Object.values(areas).reduce((a, b) => a + Number(b), 0) : null;
   }
   // Texto chico bajo el año: superficie clasificada y variación contra el primer año de la serie.
-  function textoSub(i) {
-    const t = totalDe(serie[i].areas);
-    if (t === null) return 'Evolución del territorio';
-    let s = formatHa(t) + ' clasificadas';
-    const t0 = totalDe(serie[0].areas);
-    if (i > 0 && t0) {
-      const d = (t - t0) / t0 * 100;
-      s += ` · ${d >= 0 ? '+' : ''}${d.toFixed(1).replace('.', ',')}% vs ${serie[0].anio}`;
-    }
-    return s;
-  }
+  function textoSub(i) { return 'Evolución del territorio'; }
 
   function pintarTimeline() {
     const i = indicePedido;
@@ -1507,12 +1550,13 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
     tlEl.classList.toggle('loading', cargandoAnio !== null);
     tlTicks.querySelectorAll('.tl-tick').forEach((t, k) => t.classList.toggle('active', k === i));
     tlPlay.textContent = reproduciendo ? '❚❚' : '▶';
+    document.body.classList.toggle('playing', reproduciendo);
   }
 
     // ---- Fundido suave entre años ----
   // Segunda capa sobre el mismo terreno (comparte la malla): sube su opacidad con la textura del
   // año nuevo y, al terminar, esa textura pasa a ser la base y la capa se esconde.
-  const FADE_MS = 700; // duración del fundido (ms). Mantenelo menor que el intervalo del ▶ (1500 ms)
+  const FADE_MS = 1800; // duración del fundido (ms). Mantenelo menor que el intervalo del ▶ (1500 ms)
   const overlay = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
     map: texture, roughness: 0.9, metalness: 0.02,
     transparent: true, opacity: 0, depthWrite: false,
@@ -1563,6 +1607,7 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
     // Un click puntual (palito + elevación) quedó atado a la clasificación del año anterior: lo limpiamos.
     if (marcador) { scene.remove(marcador); marcador = null; }
     if (selectedClase !== null) renderCard(selectedClase); else infoBox.classList.remove('show');
+    actualizarHistoria(i);
   }
 
   async function mostrarIndice(i) {
@@ -1610,18 +1655,84 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
     pintarTimeline();
   }
 
+  // ---- Historia + gráfico de cambio (sin mostrar números) ----
+  const storyEl = document.getElementById('story');
+  const storyText = document.getElementById('storyText');
+  const storyGraph = document.getElementById('storyGraph');
+  const storyChart = document.getElementById('storyChart');
+  const storyChartTitle = document.getElementById('storyChartTitle');
+  const CLASES_GRAFICO = [1, 2, 3, 4, 6]; // caña, citrus, maíz, monte, soja
+  let maxCambio = 1, storyTimer = 0;
+
+  function crearGrafico() {
+    storyChart.innerHTML = CLASES_GRAFICO.map(c => `
+      <div class="st-row" data-c="${c}">
+        <span class="st-name"><i style="background:${CLASES[c][1]}"></i>${CLASES[c][0]}</span>
+        <div class="st-track"><div class="st-bar" style="background:${CLASES[c][1]}"></div></div>
+      </div>`).join('');
+    // escala común: el mayor cambio entre dos años seguidos ocupa media barra
+    for (let i = 1; i < serie.length; i++) {
+      const a = serie[i].areas, b = serie[i - 1].areas;
+      if (!a || !b) continue;
+      CLASES_GRAFICO.forEach(c => { maxCambio = Math.max(maxCambio, Math.abs((a[c] || 0) - (b[c] || 0))); });
+    }
+  }
+
+  function actualizarGrafico(i) {
+    const a = serie[i] && serie[i].areas, b = serie[i - 1] && serie[i - 1].areas;
+    const ver = !!(a && b);
+    storyGraph.classList.toggle('sin-grafico', !ver);
+    if (!ver) return;
+    storyChartTitle.textContent = 'Cambio respecto de ' + serie[i - 1].anio;
+    storyChart.querySelectorAll('.st-row').forEach(row => {
+      const c = row.dataset.c;
+      const d = ((a[c] || 0) - (b[c] || 0)) / maxCambio;   // -1 .. 1
+      const w = Math.min(50, Math.abs(d) * 50);
+      const bar = row.querySelector('.st-bar');
+      bar.style.width = w + '%';
+      bar.style.left = (d >= 0 ? 50 : 50 - w) + '%';
+    });
+  }
+
+  function actualizarHistoria(i) {
+    const txt = NARRATIVA_ANIO[serie[i].anio] || '';
+    clearTimeout(storyTimer);
+    storyEl.classList.toggle('show', !!txt);
+    actualizarGrafico(i);
+    if (storyText.textContent === txt) { storyText.classList.remove('out'); return; }
+    storyText.classList.add('out');
+    storyTimer = setTimeout(() => { storyText.textContent = txt; storyText.classList.remove('out'); }, 450);
+  }
+
+  // Al dar play se cargan todos los años antes de empezar, para que no haya cortes al leer
+  async function precargarTodos(miId) {
+    for (let i = 0; i < serie.length; i++) {
+      if (!reproduciendo || miId !== reproId) break;
+      if (cacheBundles[i]) continue;
+      cargandoAnio = serie[i].anio;
+      pintarTimeline();
+      try { cacheBundles[i] = await cargarBundle(serie[i]); } catch (e) { console.error(e); }
+    }
+    cargandoAnio = null;
+    pintarTimeline();
+  }
+
   async function alternarReproduccion() {
     if (reproduciendo) { detenerReproduccion(); return; }
     reproduciendo = true;
     const miId = ++reproId;
     pintarTimeline();
+    await precargarTodos(miId);
+    if (!reproduciendo || miId !== reproId) return;
     if (indicePedido >= serie.length - 1) await irAIndice(0);
     while (reproduciendo && miId === reproId && indiceActivo < serie.length - 1) {
-      await new Promise(r => setTimeout(r, 1500));
+      // tiempo de lectura proporcional al largo del texto del año que se está viendo
+      const texto = NARRATIVA_ANIO[serie[indiceActivo].anio] || '';
+      await new Promise(r => setTimeout(r, 3500 + texto.length * 40));
       if (!reproduciendo || miId !== reproId) return;
       const antes = indiceActivo;
       await irAIndice(antes + 1);
-      if (indiceActivo === antes) break; // no cargó: cortamos para no reintentar en loop
+      if (indiceActivo === antes) break;
     }
     if (miId === reproId) { reproduciendo = false; pintarTimeline(); }
   }
@@ -1643,6 +1754,8 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
     });
     tlRange.addEventListener('input', () => { detenerReproduccion(); irAIndice(Number(tlRange.value)); });
     tlPlay.addEventListener('click', alternarReproduccion);
+    crearGrafico();
+    actualizarHistoria(indiceActivo);
     pintarTimeline();
     tlEl.classList.add('show');
   }
@@ -1683,22 +1796,10 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
     const info = CLASES[clase];
     if (!info) { infoBox.classList.remove('show'); return; }
     const [nombre, color] = info;
-    const areas = areasActivas();
-    const areaHa = areas ? areas[String(clase)] : undefined;
-    const total = areaTotal();
-    const pct = (areaHa !== undefined && total) ? (Number(areaHa) / total * 100) : null;
-    const etiquetaAnio = serie.length > 1 ? ` <span style="font-weight:400;font-size:0.68rem;color:var(--muted)">· ${serie[indiceActivo].anio}</span>` : '';
-    let html = `<div class="info-title" style="color:${color}">${nombre}${etiquetaAnio}</div><div class="info-stats">`;
-    html += `<div class="stat"><span class="stat-label">Superficie</span><span class="stat-value">${
-      areaHa !== undefined ? formatHa(areaHa) : '<span style="opacity:.6;font-weight:400">cargá el JSON</span>'
-    }</span></div>`;
-    if (pct !== null) {
-      html += `<div class="stat"><span class="stat-label">Participación</span><span class="stat-value">${pct.toFixed(1).replace('.', ',')} %</span></div>`;
-    }
+    let html = `<div class="info-title" style="color:${color}">${nombre}</div>`;
     if (elevM !== undefined) {
-      html += `<div class="stat"><span class="stat-label">Elevación del punto</span><span class="stat-value">${elevM.toFixed(0)} m</span></div>`;
+      html += `<div class="info-stats"><div class="stat"><span class="stat-label">Elevación del punto</span><span class="stat-value">${elevM.toFixed(0)} m</span></div></div>`;
     }
-    html += `</div>`;
     infoBox.innerHTML = html;
     infoBox.classList.add('show');
   }
@@ -1828,7 +1929,7 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
       row.innerHTML = `
         <span class="sw" style="background:${color}"></span>
         <div class="crop-row-main">
-          <div class="crop-row-top"><span class="crop-name">${nombre}</span>${areaHa !== undefined ? `<span class="crop-value">${formatHa(areaHa)}</span>` : ''}</div>
+          <div class="crop-row-top"><span class="crop-name">${nombre}</span></div>
           ${barHtml}
         </div>`;
       row.addEventListener('click', () => selectClase(clase));
