@@ -1059,6 +1059,11 @@ const ICONOS_CULTIVO = {
 const ICONO_TAM  = 14; // tamaño del ícono en px de la textura (1024x1024)
 const ICONO_PASO = 24; // lado de la celda del patrón: más grande = íconos más separados
 
+// ===== Íconos 3D ("pelitos") =====
+const ICONO3D_ALTO = 2.2;   // altura de cada pelito en unidades de la escena (el terreno mide 200 de ancho)
+const ICONO3D_PASO = 9;     // separación entre pelitos, en px de la textura: más chico = más denso
+const ICONO3D_MAX  = Math.ceil(TEX_SIZE / ICONO3D_PASO) ** 2; // tope de instancias
+  
 const ICONOS_IMG = {};  // { clase: HTMLImageElement } (solo los que cargaron bien)
 const _patrones  = {};  // caché de CanvasPattern por clase
 
@@ -1926,6 +1931,98 @@ async function alternarReproduccion() {
 
   // ---- Resaltado por cultivo: re-pinta la textura, no la geometría ----
   // Igual que buildColorTexture, un píxel = una clase exacta, cero mezcla.
+    // ---- Íconos 3D: planos cruzados "parados" sobre el terreno, uno por punto del cultivo ----
+  const textura3D = {};  // { clase: THREE.Texture }
+  function texturaIcono3D(clase) {
+    if (textura3D[clase]) return textura3D[clase];
+    const img = ICONOS_IMG[clase];
+    if (!img) return null; // ese cultivo no tiene ícono
+    const t = new THREE.Texture(img);
+    t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    t.needsUpdate = true;
+    textura3D[clase] = t;
+    return t;
+  }
+
+  // Dos planos de 1x1 que se cruzan en X (base apoyada en y = 0, así "nacen" del suelo)
+  function geometriaCruzada() {
+    const g = new THREE.BufferGeometry();
+    const posiciones = new Float32Array([
+      -0.5, 0, 0,   0.5, 0, 0,   0.5, 1, 0,   -0.5, 1, 0,   // plano a lo largo de X
+       0, 0, -0.5,  0, 0, 0.5,   0, 1, 0.5,    0, 1, -0.5   // plano a lo largo de Z
+    ]);
+    const uvs = new Float32Array([0,0, 1,0, 1,1, 0,1,  0,0, 1,0, 1,1, 0,1]);
+    g.setAttribute('position', new THREE.BufferAttribute(posiciones, 3));
+    g.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    g.setIndex([0,1,2, 0,2,3, 4,5,6, 4,6,7]);
+    return g;
+  }
+
+  let iconos3D = null; // un único InstancedMesh que se reutiliza para todos los cultivos
+  function crearIconos3D() {
+    const mat = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.45, side: THREE.DoubleSide });
+    iconos3D = new THREE.InstancedMesh(geometriaCruzada(), mat, ICONO3D_MAX);
+    iconos3D.frustumCulled = false;
+    iconos3D.visible = false;
+    iconos3D.count = 0;
+    scene.add(iconos3D);
+  }
+
+  // pseudo-aleatorio estable (misma posición cada vez, así no "titilan" al cambiar el relieve)
+  function rnd(i, s) { const x = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return x - Math.floor(x); }
+
+  // altura del terreno en un punto fraccionario de la grilla (interpolación bilineal)
+  function alturaEn(fx, fy) {
+    const x0 = Math.min(n - 2, Math.max(0, Math.floor(fx)));
+    const y0 = Math.min(n - 2, Math.max(0, Math.floor(fy)));
+    const tx = Math.min(1, Math.max(0, fx - x0)), ty = Math.min(1, Math.max(0, fy - y0));
+    const h00 = normArr[y0 * n + x0],       h10 = normArr[y0 * n + x0 + 1];
+    const h01 = normArr[(y0 + 1) * n + x0], h11 = normArr[(y0 + 1) * n + x0 + 1];
+    return ((h00 * (1 - tx) + h10 * tx) * (1 - ty) + (h01 * (1 - tx) + h11 * tx) * ty) * zScale;
+  }
+
+  // Reconstruye los pelitos para el cultivo "clase" (null = ocultarlos)
+  function actualizarIconos3D(clase) {
+    if (!iconos3D) crearIconos3D();
+    const tex = (clase !== null) ? texturaIcono3D(clase) : null;
+    if (!tex) { iconos3D.visible = false; iconos3D.count = 0; return; }
+
+    iconos3D.material.map = tex;
+    iconos3D.material.needsUpdate = true;
+
+    const img = ICONOS_IMG[clase];
+    const aspecto = img.naturalWidth / img.naturalHeight;
+    const clasifTex = texInfo.clasifTex;
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3();
+    const ejeY = new THREE.Vector3(0, 1, 0);
+    let k = 0;
+
+    for (let ty = 0; ty < TEX_SIZE && k < ICONO3D_MAX; ty += ICONO3D_PASO) {
+      for (let tx = 0; tx < TEX_SIZE && k < ICONO3D_MAX; tx += ICONO3D_PASO) {
+        const id = ty * TEX_SIZE + tx;
+        // punto con "jitter" dentro de su celda, para que no parezca una grilla
+        const px = Math.min(TEX_SIZE - 1, Math.floor(tx + rnd(id, 1) * ICONO3D_PASO));
+        const py = Math.min(TEX_SIZE - 1, Math.floor(ty + rnd(id, 2) * ICONO3D_PASO));
+        if (Math.round(clasifTex[py * TEX_SIZE + px]) !== clase) continue;
+
+        const u = px / (TEX_SIZE - 1), v = py / (TEX_SIZE - 1);
+        const x = (u - 0.5) * planeW;
+        const z = (v - 0.5) * planeH;                      // fila 0 = norte = -Z
+        const y = alturaEn(u * (n - 1), v * (n - 1)) - 0.05; // apenas hundido para que no flote
+
+        const alto = ICONO3D_ALTO * (0.7 + 0.6 * rnd(id, 3));  // alturas variadas
+        const ancho = alto * aspecto;
+        p.set(x, y, z);
+        q.setFromAxisAngle(ejeY, rnd(id, 4) * Math.PI);        // giro al azar
+        s.set(ancho, alto, ancho);
+        m.compose(p, q, s);
+        iconos3D.setMatrixAt(k++, m);
+      }
+    }
+    iconos3D.count = k;
+    iconos3D.instanceMatrix.needsUpdate = true;
+    iconos3D.visible = k > 0;
+  }
   // ---- Resaltado por cultivo: re-pinta la textura, no la geometría ----
   let selectedClase = null;
   const workBuffer = new Uint8ClampedArray(texInfo.baseColors.length);
@@ -1975,8 +2072,9 @@ async function alternarReproduccion() {
 
       texInfo.ctx.drawImage(capaCanvas, 0, 0);               // se imprime sobre el color
     }
-
+    actualizarIconos3D(clase);   // <- NUEVA: pelitos 3D (se ocultan solos si clase es null o no tiene ícono)
     texture.needsUpdate = true;
+
   }
 
   function areaTotal() {
@@ -2228,6 +2326,7 @@ async function alternarReproduccion() {
     for (let idx = 0; idx < pos.count; idx++) pos.setY(idx, normArr[idx] * zScale);
     pos.needsUpdate = true;
     geometry.computeVertexNormals();
+    actualizarIconos3D(selectedClase);   // <- NUEVA: los pelitos acompañan la nueva altura del terreno
     // Si había un palito clavado (y su foto flotante), el relieve nuevo ya no coincide con su altura: los retiramos.
     if (marcador) { scene.remove(marcador); marcador = null; infoBox.classList.remove('show'); }
   });
