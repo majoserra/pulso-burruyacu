@@ -937,6 +937,35 @@
   #tutorial .step b { font-size: 0.85rem; }
   #tutorial .step span.desc { font-size: 0.75rem; }
   #tutorialCloseBtn { padding: 8px; font-size: 0.85rem; margin-top: 10px; }
+
+/* Agrégalo DENTRO de tu último @media (max-width: 700px) */
+
+  /* 1. Despegar la info del punto y ponerla a la derecha, a la altura del Relieve */
+  #info {
+    position: fixed;
+    top: calc(var(--u) * 12 + env(safe-area-inset-top, 0px));
+    right: calc(var(--u) * .9);
+    left: auto; 
+    bottom: auto;
+    padding: .5em .8em !important;
+    border-radius: .8em;
+  }
+  #info .info-title { font-size: 0.9em; margin-bottom: 2px; }
+  #info .stat-value { font-size: 1rem; }
+  #info .stat-label { font-size: 0.65em; }
+
+  /* 2. Achicar la tarjeta de información del cultivo */
+  #cropInfoPanel { padding: .8em !important; }
+  #cropInfoPanel img { height: 3.5em !important; margin-bottom: .4em; }
+  #cropInfoPanel h3 { font-size: 1rem; margin-bottom: 4px; }
+  #cropInfoPanel p { font-size: 0.8rem; line-height: 1.35; margin-bottom: 8px; }
+  #cropInfoPanel .crop-products span { font-size: 0.7rem; padding: 2px 6px; }
+
+  /* 3. Achicar la ventana de la historia / narrativa */
+  #story { font-size: 12px !important; } /* Esto achica proporcionalmente toda la ventana */
+  #storyText { padding: .7em 1em .6em !important; line-height: 1.4 !important; }
+  #storyHandle { padding: .4em .6em !important; }
+  #story .sh-btn { width: 1.8em; height: 1.8em; }
 }
   
 </style>
