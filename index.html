@@ -954,18 +954,83 @@
   #info .stat-value { font-size: 1rem; }
   #info .stat-label { font-size: 0.65em; }
 
-/* 2. Achicar MUCHO más la tarjeta de información del cultivo */
-  #cropInfoPanel { padding: .6em !important; }
-  #cropInfoPanel img { height: 2.8em !important; margin-bottom: .3em !important; }
-  #cropInfoPanel h3 { font-size: 0.95rem !important; margin-bottom: 2px !important; }
-  #cropInfoPanel p { font-size: 0.75rem !important; line-height: 1.25 !important; margin-bottom: 6px !important; }
-  #cropInfoPanel .crop-products span { font-size: 0.65rem !important; padding: 2px 4px !important; }
+/* 2. Achicar TODO el bloque del cultivo seleccionado en proporción */
+  #cropInfoPanel { 
+    font-size: 11px !important; /* Al bajar la fuente base, textos e imagen se achican armónicamente */
+    padding: 1.2em !important; 
+  }
+  #cropInfoPanel img { 
+    height: 6em !important; /* Altura de la foto más equilibrada */
+    margin-bottom: 0.8em !important; 
+  }
 
   /* 3. Achicar la ventana de la historia / narrativa */
   #story { font-size: 12px !important; } /* Esto achica proporcionalmente toda la ventana */
   #storyText { padding: .7em 1em .6em !important; line-height: 1.4 !important; }
   #storyHandle { padding: .4em .6em !important; }
   #story .sh-btn { width: 1.8em; height: 1.8em; }
+}
+
+
+/* ===== OPTIMIZACIONES PARA MÓVILES (Agregado al final para sobrescribir) ===== */
+@media (max-width: 700px) {
+  /* 1. Ocultar el panel de la brújula/notas cuando se ve un cultivo */
+  body.cultivo-activo #rightStack {
+    display: none !important;
+  }
+
+  /* 2. Achicar la línea de tiempo */
+  #timeline { 
+    --th: 1.5em; 
+    padding: 8px 12px 6px 8px !important; 
+    gap: 8px !important; 
+  }
+  .tl-play { width: 32px !important; height: 32px !important; font-size: 0.8rem !important; }
+  .tl-year { font-size: 1.1rem !important; }
+  
+  /* 3. Despegar la info del punto y ponerla a la derecha */
+  #info {
+    position: fixed;
+    top: calc(var(--u) * 12 + env(safe-area-inset-top, 0px));
+    right: calc(var(--u) * .9);
+    left: auto; 
+    bottom: auto;
+    padding: .5em .8em !important;
+    border-radius: .8em;
+  }
+  #info .info-title { font-size: 0.9em; margin-bottom: 2px; }
+  #info .stat-value { font-size: 1rem; }
+  #info .stat-label { font-size: 0.65em; }
+
+  /* 4. Achicar TODO el bloque del cultivo seleccionado en proporción */
+  #cropInfoPanel { 
+    font-size: 11px !important; 
+    padding: 1.2em !important; 
+  }
+  #cropInfoPanel img { 
+    height: 6em !important; 
+    margin-bottom: 0.8em !important; 
+  }
+
+  /* 5. Achicar la ventana de la historia / narrativa */
+  #story { font-size: 12px !important; } 
+  #storyText { padding: .7em 1em .6em !important; line-height: 1.4 !important; }
+  #storyHandle { padding: .4em .6em !important; }
+  #story .sh-btn { width: 1.8em; height: 1.8em; }
+
+  /* 6. Achicar el cuadro inicial del Tutorial */
+  #tutorial .card {
+    width: 82% !important; 
+    max-width: 320px !important;
+    padding: 18px !important;
+    border-radius: 14px !important;
+  }
+  #tutorial .card h1 { font-size: 1.15rem !important; margin-bottom: 8px !important; }
+  #tutorial .step { margin: 8px 0 !important; gap: 10px !important; }
+  #tutorial .step .emoji { font-size: 1.1rem !important; }
+  #tutorial .step b { font-size: 0.85rem !important; }
+  #tutorial .step span.desc { font-size: 0.75rem !important; line-height: 1.3 !important; }
+  #tutorialCloseBtn { padding: 10px !important; font-size: 0.85rem !important; margin-top: 12px !important; }
 }
   
 </style>
