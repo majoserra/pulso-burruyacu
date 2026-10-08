@@ -854,6 +854,49 @@
   .tour-btn-skip:hover { color: var(--text); }
   .tour-btn-next { background: var(--accent); border: none; color: #1a1c1f; font-weight: 700; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 0.85rem; transition: transform 0.15s; }
   .tour-btn-next:hover { transform: scale(1.05); }
+
+/* ===== VENTANA DE HISTORIA: flotante y arrastrable ===== */
+#story {
+  z-index: 12; padding: 0; overflow: hidden; max-width: calc(100vw - 16px);
+  border: 1px solid rgba(255,105,180,.55);
+  box-shadow: 0 18px 50px rgba(0,0,0,.55), 0 0 26px rgba(255,105,180,.2);
+}
+#story.arrastrando { box-shadow: 0 28px 70px rgba(0,0,0,.7), 0 0 38px rgba(255,105,180,.4); }
+
+#storyHandle {
+  display: flex; align-items: center; gap: .6em; padding: .55em .6em .55em .8em;
+  background: linear-gradient(180deg, rgba(255,105,180,.24), rgba(255,105,180,.08));
+  border-bottom: 1px solid rgba(255,105,180,.3);
+  cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+}
+#story.arrastrando #storyHandle { cursor: grabbing; }
+.sh-grip {
+  flex: 0 0 auto; width: 1em; height: 1.5em; opacity: .85;
+  background-image: radial-gradient(circle, var(--accent) 1.2px, transparent 1.7px);
+  background-size: .5em .5em;               /* 2 columnas x 3 filas de puntitos */
+}
+.sh-title {
+  flex: 1; min-width: 0; font-size: .85em; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sh-title small { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); margin-left: .6em; }
+
+/* los botones de la cabecera pisan el estilo viejo (absoluto) de #cerrarHistoria */
+#story .sh-btn {
+  position: static; flex: 0 0 auto; width: 1.9em; height: 1.9em; padding: 0; margin: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: none; border-radius: 50%; background: rgba(128,128,128,.25);
+  color: var(--text); font-size: 1em; line-height: 1; cursor: pointer; transition: background .15s;
+}
+#story .sh-btn:hover { background: var(--accent); color: #1a1c1f; transform: none; }
+
+/* el padding que antes tenía #story pasa a sus hijos */
+#storyText { padding: .9em 1.2em .8em; }
+#storyGraph { margin: 0 1.2em 1em; padding-top: .7em; }
+#story.colapsada #storyBody { display: none; }
+#story.colapsada #storyHandle { border-bottom: none; }
+
+@media (max-width: 700px) { .sh-title small { display: none; } }
   
 </style>
 </head>
@@ -1005,11 +1048,18 @@
 </div>
 
 <div id="story">
-  <button id="cerrarHistoria" aria-label="Cerrar historia" title="Cerrar panel">×</button>
-  <p id="storyText"></p>
-  <div id="storyGraph" class="sin-grafico">
-    <div class="st-head"><span id="storyChartTitle"></span><span>◀ menos · más ▶</span></div>
-    <div id="storyChart"></div>
+  <div id="storyHandle" title="Arrastrá para mover">
+    <span class="sh-grip" aria-hidden="true"></span>
+    <span class="sh-title">📖 Historia <small>arrastrá para mover</small></span>
+    <button id="minimizarHistoria" class="sh-btn" type="button" aria-label="Minimizar" title="Minimizar">–</button>
+    <button id="cerrarHistoria" class="sh-btn" type="button" aria-label="Cerrar historia" title="Cerrar panel">×</button>
+  </div>
+  <div id="storyBody">
+    <p id="storyText"></p>
+    <div id="storyGraph" class="sin-grafico">
+      <div class="st-head"><span id="storyChartTitle"></span><span>◀ menos · más ▶</span></div>
+      <div id="storyChart"></div>
+    </div>
   </div>
 </div>
   
@@ -1674,6 +1724,7 @@ function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, in
 
   function pintarTimeline() {
     const i = indicePedido;
+    tlRange.step = reproduciendo ? 'any' : '1';   // <- NUEVA
     tlRange.value = String(i);
     tlRange.style.setProperty('--p', serie.length > 1 ? String(i / (serie.length - 1)) : '1');
     tlYear.textContent = serie[i].anio;
@@ -1869,12 +1920,36 @@ function actualizarHistoria(i) {
     pintarTimeline();
   }
 
-async function alternarReproduccion() {
+  // Tiempo de lectura de cada año. El primero (2018) es solo el punto de partida, sin gráfico
+  // de comparación, así que pasa rápido. El resto depende del largo del texto (sin contar etiquetas HTML).
+  function tiempoLectura(indice) {
+    if (indice === 0) return 2000;
+    const texto = (NARRATIVA_ANIO[serie[indice].anio] || '').replace(/<[^>]*>/g, '');
+    return 3500 + texto.length * 40;
+  }
+
+  // Espera "ms" milisegundos moviendo el slider de forma continua desde el año "desde" hasta el siguiente.
+  // Devuelve true si llegó al final, o false si la reproducción se detuvo en el medio.
+  function esperarAvanzando(ms, desde, miId) {
+    return new Promise((resolve) => {
+      const t0 = performance.now();
+      const total = serie.length - 1;
+      (function frame(now) {
+        if (!reproduciendo || miId !== reproId) return resolve(false);
+        const k = Math.min(1, (now - t0) / ms);
+        const pos = desde + k;                               // ej. 2.37 = 37% del camino entre el 3.º y el 4.º año
+        tlRange.value = String(pos);
+        tlRange.style.setProperty('--p', String(pos / total)); // la barra rosa acompaña a la perilla
+        if (k < 1) requestAnimationFrame(frame); else resolve(true);
+      })(t0);
+    });
+  }
+
+  async function alternarReproduccion() {
     if (reproduciendo) { detenerReproduccion(); return; }
-    
-    // NUEVO: Indicamos que se debe mostrar el panel de la historia
-    historiaCerradaPorUsuario = false; 
-    
+
+    historiaCerradaPorUsuario = false;
+
     reproduciendo = true;
     const miId = ++reproId;
     pintarTimeline();
@@ -1882,17 +1957,14 @@ async function alternarReproduccion() {
     if (!reproduciendo || miId !== reproId) return;
     if (indicePedido >= serie.length - 1) await irAIndice(0);
     while (reproduciendo && miId === reproId && indiceActivo < serie.length - 1) {
-      // tiempo de lectura proporcional al largo del texto del año que se está viendo
-      const texto = NARRATIVA_ANIO[serie[indiceActivo].anio] || '';
-      await new Promise(r => setTimeout(r, 3500 + texto.length * 40));
-      if (!reproduciendo || miId !== reproId) return;
       const antes = indiceActivo;
+      const llego = await esperarAvanzando(tiempoLectura(antes), antes, miId);
+      if (!llego) return;                                    // el usuario pausó o tocó la línea de tiempo
       await irAIndice(antes + 1);
       if (indiceActivo === antes) break;
     }
     if (miId === reproId) { reproduciendo = false; pintarTimeline(); }
   }
-
   function setupTimeline() {
     if (serie.length < 2) { tlEl.classList.remove('show'); return; } // con un solo año no hay nada que recorrer
     tlRange.min = '0';
@@ -1919,7 +1991,7 @@ async function alternarReproduccion() {
     tlRange.addEventListener('input', () => { 
       historiaCerradaPorUsuario = false;
       detenerReproduccion(); 
-      irAIndice(Number(tlRange.value)); 
+      irAIndice(Math.round(Number(tlRange.value)));   // antes: irAIndice(Number(tlRange.value))
     });
     
     tlPlay.addEventListener('click', alternarReproduccion);
@@ -2562,6 +2634,70 @@ document.getElementById('tourNext').addEventListener('click', () => {
 });
 document.getElementById('tourSkip').addEventListener('click', terminarTour);
 
+// ===== Ventana de historia: arrastrable y minimizable =====
+(function ventanaHistoria() {
+  const win = document.getElementById('story');
+  const handle = document.getElementById('storyHandle');
+  const btnMin = document.getElementById('minimizarHistoria');
+  if (!win || !handle) return;
+  let dx = 0, dy = 0, activo = false, movida = false;
+
+  // Pasa de "centrada abajo" (left:50% + transform + bottom) a coordenadas libres en px
+  function aPosicionLibre() {
+    const r = win.getBoundingClientRect();
+    win.style.left = r.left + 'px';
+    win.style.top = r.top + 'px';
+    win.style.bottom = 'auto';
+    win.style.transform = 'none';
+  }
+  // Evita que la ventana se pierda fuera de la pantalla (la cabecera siempre queda a mano)
+  function limitar(left, top) {
+    const maxL = Math.max(0, window.innerWidth - win.offsetWidth);
+    const maxT = Math.max(0, window.innerHeight - handle.offsetHeight);
+    return [Math.min(maxL, Math.max(0, left)), Math.min(maxT, Math.max(0, top))];
+  }
+
+  handle.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) return;           // los botones no inician el arrastre
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (!movida) { aPosicionLibre(); movida = true; }
+    const r = win.getBoundingClientRect();
+    dx = e.clientX - r.left; dy = e.clientY - r.top;
+    activo = true;
+    win.classList.add('arrastrando');
+    handle.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  handle.addEventListener('pointermove', (e) => {
+    if (!activo) return;
+    const [l, t] = limitar(e.clientX - dx, e.clientY - dy);
+    win.style.left = l + 'px';
+    win.style.top = t + 'px';
+  });
+  function soltar(e) {
+    if (!activo) return;
+    activo = false;
+    win.classList.remove('arrastrando');
+    try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
+  }
+  handle.addEventListener('pointerup', soltar);
+  handle.addEventListener('pointercancel', soltar);
+
+  window.addEventListener('resize', () => {           // si achican la ventana del navegador, no se pierde
+    if (!movida) return;
+    const r = win.getBoundingClientRect();
+    const [l, t] = limitar(r.left, r.top);
+    win.style.left = l + 'px';
+    win.style.top = t + 'px';
+  });
+
+  if (btnMin) btnMin.addEventListener('click', () => {
+    const colapsada = win.classList.toggle('colapsada');
+    btnMin.textContent = colapsada ? '+' : '–';
+    btnMin.title = colapsada ? 'Expandir' : 'Minimizar';
+  });
+})();
+  
 </script>
 </body>
 </html>
