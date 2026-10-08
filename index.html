@@ -1047,6 +1047,57 @@ const CLASES = {
 const MESH_GRID = 200;   // resolución de la malla (elevación) - más alto = terreno más suave, más lento
 const TEX_SIZE  = 1024;  // resolución de la textura de color - más alto = bordes de parcela más nítidos
 
+// ===== Íconos de cultivos (patrón de relleno) =====
+// Solo los cultivos con ícono. Los demás (pasturas, sorgo, barbecho) quedan con color sólido.
+const ICONOS_CULTIVO = {
+  1: 'estetica/cania.png',  // Caña de azúcar
+  2: 'estetica/limon.png',  // Citrus
+  3: 'estetica/maiz.png',   // Maíz
+  4: 'estetica/monte.png',  // Monte nativo
+  6: 'estetica/soja.png'    // Soja
+};
+const ICONO_TAM  = 14; // tamaño del ícono en px de la textura (1024x1024)
+const ICONO_PASO = 24; // lado de la celda del patrón: más grande = íconos más separados
+
+const ICONOS_IMG = {};  // { clase: HTMLImageElement } (solo los que cargaron bien)
+const _patrones  = {};  // caché de CanvasPattern por clase
+
+// Precarga todos los PNG. Nunca rechaza: si un ícono falta, se avisa por consola
+// y ese cultivo se sigue viendo con el color sólido de siempre.
+function precargarIconos() {
+  return Promise.all(Object.entries(ICONOS_CULTIVO).map(([clase, url]) =>
+    new Promise(resolve => {
+      const img = new Image();
+      img.onload  = () => { ICONOS_IMG[clase] = img; resolve(); };
+      img.onerror = () => { console.warn('[iconos] no se pudo cargar', url); resolve(); };
+      img.src = url;
+    })
+  ));
+}
+const iconosPromesa = precargarIconos(); // arranca al abrir la app
+
+// Arma (una sola vez por cultivo) el patrón: una celda con un ícono al centro y
+// cuatro en las esquinas, que al repetirse queda "al tresbolillo" (en diagonal).
+// Devuelve null si ese cultivo no tiene ícono.
+function patronDeIcono(clase) {
+  if (_patrones[clase]) return _patrones[clase];
+  const img = ICONOS_IMG[clase];
+  if (!img) return null;
+  const T = ICONO_PASO;
+  const tile = document.createElement('canvas');
+  tile.width = T; tile.height = T;
+  const t = tile.getContext('2d');
+  t.imageSmoothingEnabled = true;
+  t.imageSmoothingQuality = 'high';
+  const k = ICONO_TAM / Math.max(img.naturalWidth, img.naturalHeight); // conserva proporción
+  const w = img.naturalWidth * k, h = img.naturalHeight * k;
+  [[T/2, T/2], [0, 0], [T, 0], [0, T], [T, T]].forEach(([cx, cy]) => {
+    t.drawImage(img, cx - w/2, cy - h/2, w, h);
+  });
+  _patrones[clase] = t.createPattern(tile, 'repeat');
+  return _patrones[clase];
+}
+  
 let filesLoaded = { dem: null, clasif: null, clasifHist: null };
 let areasPorClase = null; // { "1": 1234.5, "2": 88.0, ... } superficie total en hectáreas del año actual
 let areasPorClaseHist = null; // idem, pero del año histórico que se compara (si se cargó)
@@ -1875,25 +1926,56 @@ async function alternarReproduccion() {
 
   // ---- Resaltado por cultivo: re-pinta la textura, no la geometría ----
   // Igual que buildColorTexture, un píxel = una clase exacta, cero mezcla.
+  // ---- Resaltado por cultivo: re-pinta la textura, no la geometría ----
   let selectedClase = null;
   const workBuffer = new Uint8ClampedArray(texInfo.baseColors.length);
+
+  // Buffers y canvas auxiliares (se crean una sola vez y se reutilizan en cada cambio)
+  const maskBuffer = new Uint8ClampedArray(TEX_SIZE * TEX_SIZE * 4); // alpha 255 = píxel de la clase
+  const maskCanvas = document.createElement('canvas');
+  const capaCanvas = document.createElement('canvas');
+  maskCanvas.width = maskCanvas.height = TEX_SIZE;
+  capaCanvas.width = capaCanvas.height = TEX_SIZE;
+  const maskCtx = maskCanvas.getContext('2d');
+  const capaCtx = capaCanvas.getContext('2d');
+
   function setHighlight(clase) {
     const base = texInfo.baseColors;
     const clasifTex = texInfo.clasifTex;
+    const patron = (clase !== null) ? patronDeIcono(clase) : null; // null si el cultivo no tiene ícono
+
     if (clase === null) {
       workBuffer.set(base);
     } else {
       for (let i = 0, p = 0; i < clasifTex.length; i++, p += 4) {
         if (Math.round(clasifTex[i]) === clase) {
           workBuffer[p] = base[p]; workBuffer[p + 1] = base[p + 1]; workBuffer[p + 2] = base[p + 2]; workBuffer[p + 3] = 255;
+          maskBuffer[p + 3] = 255;
         } else {
-          // Lo que no es la clase elegida se apaga a gris oscuro para que resalte lo seleccionado.
           const gris = (0.299 * base[p] + 0.587 * base[p + 1] + 0.114 * base[p + 2]) * 0.35;
           workBuffer[p] = gris; workBuffer[p + 1] = gris; workBuffer[p + 2] = gris; workBuffer[p + 3] = 255;
+          maskBuffer[p + 3] = 0;
         }
       }
     }
+    // 1) color sólido de siempre (esto también borra cualquier ícono previo)
     texInfo.ctx.putImageData(new ImageData(workBuffer, TEX_SIZE, TEX_SIZE), 0, 0);
+
+    // 2) ícono repetido, recortado a los píxeles de la clase seleccionada
+    if (patron) {
+      capaCtx.globalCompositeOperation = 'source-over';
+      capaCtx.clearRect(0, 0, TEX_SIZE, TEX_SIZE);
+      capaCtx.fillStyle = patron;
+      capaCtx.fillRect(0, 0, TEX_SIZE, TEX_SIZE);            // toda la capa con el patrón
+
+      maskCtx.putImageData(new ImageData(maskBuffer, TEX_SIZE, TEX_SIZE), 0, 0);
+      capaCtx.globalCompositeOperation = 'destination-in';   // se queda solo donde la máscara tiene alpha
+      capaCtx.drawImage(maskCanvas, 0, 0);
+      capaCtx.globalCompositeOperation = 'source-over';
+
+      texInfo.ctx.drawImage(capaCanvas, 0, 0);               // se imprime sobre el color
+    }
+
     texture.needsUpdate = true;
   }
 
