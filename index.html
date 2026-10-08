@@ -908,6 +908,36 @@
 #reliefRange::-moz-range-thumb { box-shadow: 0 2px 8px rgba(0,0,0,.45); }
 
 .note-card summary::after { box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+
+/* ===== OPTIMIZACIONES PARA MÓVILES (Agregado al final para sobrescribir) ===== */
+@media (max-width: 700px) {
+  /* 1. Ocultar el panel de la brújula/notas cuando se ve un cultivo */
+  body.cultivo-activo #rightStack {
+    display: none !important;
+  }
+
+  /* 2. Achicar la línea de tiempo */
+  #timeline { 
+    --th: 1.5em; /* Perilla más chica */
+    padding: 8px 12px 6px 8px !important; 
+    gap: 8px !important; 
+  }
+  .tl-play { width: 32px !important; height: 32px !important; font-size: 0.8rem !important; }
+  .tl-year { font-size: 1.1rem !important; }
+  
+  /* 3. Modal de Tutorial proporcionado a la pantalla */
+  #tutorial .card {
+    width: 85%;
+    padding: 18px;
+    border-radius: 14px;
+  }
+  #tutorial .card h1 { font-size: 1.15rem; margin-bottom: 10px; }
+  #tutorial .step { margin: 8px 0; gap: 10px; }
+  #tutorial .step .emoji { font-size: 1.1rem; }
+  #tutorial .step b { font-size: 0.85rem; }
+  #tutorial .step span.desc { font-size: 0.75rem; }
+  #tutorialCloseBtn { padding: 8px; font-size: 0.85rem; margin-top: 10px; }
+}
   
 </style>
 </head>
@@ -2253,8 +2283,10 @@ function actualizarHistoria(i) {
     panel.querySelector('.crop-info-close').addEventListener('click', hideCropInfo);
     panel.classList.add('show');
   }
-  function hideCropInfo() {
+ function hideCropInfo() {
     document.getElementById('cropInfoPanel').classList.remove('show');
+    // Vuelve a mostrar la brújula al cerrar la cruz
+    document.body.classList.remove('cultivo-activo'); 
   }
 
   function selectClase(clase, elevM) {
@@ -2265,12 +2297,17 @@ function actualizarHistoria(i) {
     }
     setHighlight(selectedClase);
     updateSidebarActive();
+    
     if (selectedClase === null) {
       infoBox.classList.remove('show');
       hideCropInfo();
+      // Vuelve a mostrar la brújula si deseleccionamos el cultivo
+      document.body.classList.remove('cultivo-activo'); 
     } else {
       renderCard(selectedClase, elevM);
       showCropInfo(selectedClase);
+      // Oculta la brújula/notas en el celular para que no tapen la tarjeta
+      document.body.classList.add('cultivo-activo'); 
     }
   }
 
