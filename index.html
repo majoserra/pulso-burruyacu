@@ -936,11 +936,24 @@
   #tutorial .step .emoji { font-size: 1.1rem; }
   #tutorial .step b { font-size: 0.85rem; }
   #tutorial .step span.desc { font-size: 0.75rem; }
-/* Elimina el margen superior que desnivelaba al botón rosa */
-  #tutorialCloseBtn { padding: 10px !important; font-size: 0.85rem !important; margin-top: 0 !important; }
+/* Ajuste de los botones del tutorial para que queden chicos y parejos */
+  #tutorial .card div[style*="display:flex"] {
+    gap: 8px !important;
+    margin-top: 15px !important;
+  }
   
-  /* Fuerza a que AMBOS botones midan exactamente lo mismo (flex: 1) y tengan la misma letra */
-  #tutorial .card div[style*="display:flex"] button { flex: 1 !important; font-size: 0.85rem !important; }
+  #tutorial .card div[style*="display:flex"] button {
+    flex: 1 !important; 
+    margin: 0 !important;
+    padding: 8px 4px !important; 
+    font-size: 0.75rem !important; /* Letra más chica para evitar que deforme el botón */
+    line-height: 1.1 !important;
+    min-height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
 /* Agrégalo DENTRO de tu último @media (max-width: 700px) */
 
   /* 1. Despegar la info del punto y ponerla a la derecha, a la altura del Relieve */
