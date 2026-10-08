@@ -817,7 +817,7 @@
 
   @media (max-width: 700px) {
     #story { width: calc(100vw - var(--u) * 1.8); bottom: calc(var(--u) * 9.8 + env(safe-area-inset-bottom, 0px)); }
-    body:not(.playing) #story { display: none; }
+
     body.playing #leftStack, body.playing #rightStack { display: none; }
   }
 
@@ -954,12 +954,12 @@
   #info .stat-value { font-size: 1rem; }
   #info .stat-label { font-size: 0.65em; }
 
-  /* 2. Achicar la tarjeta de información del cultivo */
-  #cropInfoPanel { padding: .8em !important; }
-  #cropInfoPanel img { height: 3.5em !important; margin-bottom: .4em; }
-  #cropInfoPanel h3 { font-size: 1rem; margin-bottom: 4px; }
-  #cropInfoPanel p { font-size: 0.8rem; line-height: 1.35; margin-bottom: 8px; }
-  #cropInfoPanel .crop-products span { font-size: 0.7rem; padding: 2px 6px; }
+/* 2. Achicar MUCHO más la tarjeta de información del cultivo */
+  #cropInfoPanel { padding: .6em !important; }
+  #cropInfoPanel img { height: 2.8em !important; margin-bottom: .3em !important; }
+  #cropInfoPanel h3 { font-size: 0.95rem !important; margin-bottom: 2px !important; }
+  #cropInfoPanel p { font-size: 0.75rem !important; line-height: 1.25 !important; margin-bottom: 6px !important; }
+  #cropInfoPanel .crop-products span { font-size: 0.65rem !important; padding: 2px 4px !important; }
 
   /* 3. Achicar la ventana de la historia / narrativa */
   #story { font-size: 12px !important; } /* Esto achica proporcionalmente toda la ventana */
