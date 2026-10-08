@@ -858,10 +858,11 @@
 /* ===== VENTANA DE HISTORIA: flotante y arrastrable ===== */
 #story {
   z-index: 12; padding: 0; overflow: hidden; max-width: calc(100vw - 16px);
-  border: 1px solid rgba(255,105,180,.55);
-  box-shadow: 0 18px 50px rgba(0,0,0,.55), 0 0 26px rgba(255,105,180,.2);
+  border: 1px solid rgba(255,255,255,.16);
+  box-shadow: 0 18px 50px rgba(0,0,0,.55);
 }
-#story.arrastrando { box-shadow: 0 28px 70px rgba(0,0,0,.7), 0 0 38px rgba(255,105,180,.4); }
+#story.arrastrando { box-shadow: 0 28px 70px rgba(0,0,0,.7); }
+  
 
 #storyHandle {
   display: flex; align-items: center; gap: .6em; padding: .55em .6em .55em .8em;
@@ -897,6 +898,16 @@
 #story.colapsada #storyHandle { border-bottom: none; }
 
 @media (max-width: 700px) { .sh-title small { display: none; } }
+
+/* ===== Sombras neutras en lugar de brillo rosa ===== */
+.tl-play { box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+
+#tlRange::-webkit-slider-thumb,
+#reliefRange::-webkit-slider-thumb { box-shadow: 0 2px 8px rgba(0,0,0,.45); }
+#tlRange::-moz-range-thumb,
+#reliefRange::-moz-range-thumb { box-shadow: 0 2px 8px rgba(0,0,0,.45); }
+
+.note-card summary::after { box-shadow: 0 2px 8px rgba(0,0,0,.4); }
   
 </style>
 </head>
@@ -1922,10 +1933,15 @@ function actualizarHistoria(i) {
 
   // Tiempo de lectura de cada año. El primero (2018) es solo el punto de partida, sin gráfico
   // de comparación, así que pasa rápido. El resto depende del largo del texto (sin contar etiquetas HTML).
+  // Tiempos de lectura (ms). Ajustá estas tres constantes a gusto.
+  const MS_ANIO_BASE   = 5000; // 2018: año de partida, sin gráfico de comparación
+  const MS_LECTURA_MIN = 4500; // mínimo del resto de los años (antes 3500)
+  const MS_POR_CARACTER = 50;  // por cada letra del texto (antes 40)
+
   function tiempoLectura(indice) {
-    if (indice === 0) return 2000;
+    if (indice === 0) return MS_ANIO_BASE;
     const texto = (NARRATIVA_ANIO[serie[indice].anio] || '').replace(/<[^>]*>/g, '');
-    return 3500 + texto.length * 40;
+    return MS_LECTURA_MIN + texto.length * MS_POR_CARACTER;
   }
 
   // Espera "ms" milisegundos moviendo el slider de forma continua desde el año "desde" hasta el siguiente.
