@@ -1699,23 +1699,22 @@ const BTN_EXPANDIR = '<button type="button" class="panel-expand" aria-label="Amp
 // Si algún año no existe, se saltea; si falta el DEM o no hay ningún año, vuelve al modo manual.
 
 const NARRATIVA_ANIO = {
-  '2018': 'La historia comienza con un Burruyacú donde el monte todavía domina gran parte del paisaje. Entre sus extensiones verdes, los campos cultivados dibujan un mosaico de formas y colores. Pero el territorio no es estático: cada campaña trae cambios que, poco a poco, van dejando su marca.',
-
-  '2019': 'El paisaje empieza a moverse. Mientras la soja pierde protagonismo, otros cultivos ganan espacio y el monte conserva su lugar como uno de los grandes protagonistas. A simple vista, los cambios pueden pasar inadvertidos; al mirar desde el cielo, empiezan a revelar una historia mucho más profunda.',
-
-  '2020': 'Después de los primeros cambios, el paisaje vuelve a sorprender. La caña de azúcar y el maíz siguen su propio camino, mientras las distintas coberturas se reorganizan sobre el territorio. Burruyacú cambia de a poco, como si cada campaña escribiera una nueva página sin borrar del todo la anterior.',
-
-  '2021': 'El equilibrio comienza a transformarse. Los campos cultivados avanzan y el monte empieza a ocupar un lugar cada vez menos dominante. No se trata de un cambio repentino, sino de una transformación que se construye campaña tras campaña, hasta volverse imposible de ignorar.',
-
-  '2022': 'La historia toma otro rumbo: mientras algunos cultivos retroceden, el maíz gana impulso y se convierte en uno de los grandes protagonistas del año. El paisaje vuelve a reorganizarse, recordándonos que ningún cultivo mantiene para siempre el mismo lugar en el mapa.',
-
-  '2023': 'La caña de azúcar vuelve a hacerse notar y gana terreno en el paisaje. Los campos adquieren un nuevo protagonismo mientras el monte continúa cediendo espacio. Las piezas del mosaico cambian de lugar, y Burruyacú sigue escribiendo una historia en la que cada año trae un nuevo giro.',
-
-  '2024': 'Esta vez, la historia cambia de protagonistas. La soja pierde terreno y el citrus gana presencia, mientras la caña sigue siendo una parte importante del paisaje productivo. El monte, entretanto, continúa retrocediendo. Desde el cielo, el territorio empieza a mostrar una fisonomía distinta a la de los primeros capítulos.',
-
-  '2026': 'Han pasado varios años desde aquella primera imagen, y Burruyacú ya no luce igual. Algunos cultivos recuperan terreno, otros pierden protagonismo y el monte enfrenta una presión cada vez más visible en el paisaje. La historia queda abierta: el territorio sigue cambiando, y cada nueva imagen permite descubrir qué rumbo está tomando.<br><span style="font-size:0.85em; color:var(--muted); display:flex; align-items:start; gap:8px; margin-top:12px; padding:10px; background:rgba(128,128,128,0.15); border-radius:8px; border-left:3px solid var(--accent);"><span>☁️</span><span><b>Un capítulo que falta:</b> La historia salta de 2024 a 2026 porque no se encontró una imagen satelital óptima y libre de nubes para clasificar la campaña 2025. <i>Más información en «Sobre las imágenes satelitales».</i></span></span>'
+  '2018': 'Para dar inicio a este recorrido, nos encontramos con un paisaje donde el monte nativo actúa como el gran guardián del territorio, abarcando casi la mitad de la superficie total. En las tierras ya destinadas a la producción, la soja marca el ritmo como el cultivo principal, dejando bastante más atrás a los tradicionales lotes de caña de azúcar y maíz.',
+  
+  '2019': 'La dinámica productiva parece tomarse una pausa durante esta campaña, lo que permite observar una leve pero interesante recuperación en la extensión del bosque nativo. Como consecuencia de este freno en la expansión agrícola, tanto la soja como la caña de azúcar experimentan una notable retracción en sus áreas sembradas.',
+  
+  '2020': 'Retomando el ritmo productivo, la frontera agrícola vuelve a ejercer presión sobre las áreas naturales para dar lugar a una nueva configuración de los lotes. En este contexto, la caña de azúcar inicia un claro ciclo de expansión territorial que se complementa con el avance sostenido de las plantaciones de citrus.',
+  
+  '2021': 'Asistimos a un cambio estructural clave en el que, por primera vez en la serie, la actividad agrícola reduce de forma drástica la superficie natural del departamento. Ese nuevo espacio que se abre es aprovechado rápidamente por el maíz, que logra una fuerte expansión para disputar terreno mientras la caña de azúcar sigue sumando hectáreas.',
+  
+  '2022': 'Las decisiones de siembra cambian radicalmente a favor de la soja, que logra su máxima extensión histórica y pasa a teñir gran parte de la superficie cultivable. Este avance arrollador de la oleaginosa tiene un costo directo sobre los demás cultivos, desplazando fuertemente al maíz y frenando en seco el impulso que traían los cañaverales.',
+  
+  '2023': 'En una clara muestra de la alta rotación que caracteriza a la zona, el paisaje da un nuevo giro cuando la caña de azúcar recupera su protagonismo histórico. Al expandirse de manera acelerada, la caña avanza directamente sobre los lotes que el año anterior pertenecían a la soja, provocando una caída muy pronunciada en la superficie de esta última.',
+  
+  '2024': 'Confirmando la tendencia del año previo, los cañaverales continúan su avance hasta alcanzar su máxima extensión de toda la década. Este crecimiento se da en paralelo con una fuerte consolidación del citrus como alternativa productiva, logrando que tanto la caña como los frutales le sigan restando espacio a una soja que continúa en pleno retroceso.',
+  
+  '2026': 'Al llegar al final de nuestro recorrido, nos encontramos frente a un mapa profundamente transformado donde el monte nativo registra su nivel más bajo, dejando en evidencia el impacto continuo de la agricultura. Sobre estos campos, el maíz marca un récord de presencia, el citrus mantiene firme su terreno y la soja demuestra su resiliencia al recuperar gran parte de la superficie perdida en las campañas anteriores.<br><span style="font-size:0.85em; color:var(--muted); display:flex; align-items:start; gap:8px; margin-top:12px; padding:10px; background:rgba(128,128,128,0.15); border-radius:8px; border-left:3px solid var(--accent);"><span>☁</span><span><b>Salto temporal:</b> Las nubes taparon la zona durante los pasos del satélite en la campaña 2025, impidiendo tener una imagen limpia para clasificar ese año (<i>+info en "Sobre las imágenes satelitales"</i>).</span></span>'
 };
-
 
   const DATA_SOURCES = {
   dem: 'data/dem_burruyacu.tif',
