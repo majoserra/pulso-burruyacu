@@ -2353,45 +2353,45 @@ function actualizarHistoria(i) {
   // cuando se selecciona un cultivo (tocando el terreno o eligiéndolo en la lista lateral).
   // Para sumar los demás cultivos: agregá una entrada más al objeto, con la misma forma que
   // la de caña, y subí la imagen a /img/ en el repo.
-  const CROP_INFO = {
+const CROP_INFO = {
     1: {
       img: 'img/cana.jpg',
-      texto: 'La caña de azúcar (Saccharum officinarum) es una gramínea tropical de tallos altos y fibrosos. En Tucumán es el cultivo histórico de la provincia: se cosecha en la "zafra" (abril a noviembre) y se procesa en los ingenios.',
+      texto: 'La caña de azúcar es el cultivo histórico y el principal motor agroindustrial de Tucumán. En departamentos del este como Burruyacú, encuentra amplias planicies ideales para su expansión territorial. Su cosecha, conocida como "zafra", se extiende de mayo a noviembre para abastecer a los ingenios de la provincia.',
       productos: ['Azúcar', 'Bioetanol', 'Bagazo (energía/papel)', 'Melaza (alimento animal)']
     },
     2: {
       img: 'img/citrus.jpg',
-      texto: 'El citrus agrupa limón, naranja, mandarina y pomelo. Tucumán es la principal zona citrícola de Argentina y uno de los mayores productores mundiales de limón, con buena parte de la cosecha destinada a la industria.',
-      productos: ['Fruta fresca de exportación', 'Aceites esenciales', 'Jugo concentrado', 'Cáscara deshidratada']
+      texto: 'La citricultura tucumana está fuertemente dominada por el limón, cultivo que posiciona a la provincia como uno de los líderes mundiales, seguido en menor medida por la naranja. Las zonas cálidas de la región ofrecen el clima ideal tanto para la exportación de fruta fresca como para su intensivo procesamiento industrial.',
+      productos: ['Aceite esencial de limón', 'Jugo concentrado', 'Cáscara deshidratada', 'Fruta fresca de exportación']
     },
     3: {
       img: 'img/maiz.jpg',
-      texto: 'El maíz es un cereal de ciclo estival: se siembra en primavera y se cosecha en otoño. Es uno de los cultivos extensivos más importantes del país, usado como alimento animal, consumo humano y materia prima industrial.',
-      productos: ['Alimento animal', 'Alimento humano (harina, aceite)', 'Almidón', 'Bioetanol']
+      texto: 'Cultivo clave en la rotación agrícola del este tucumano. Como cereal estival, se siembra en verano y se cosecha en invierno. En Burruyacú, el maíz es fundamental para aportar rastrojo, preservar la calidad del suelo frente al monocultivo y abastecer de grano tanto a la industria como a la ganadería local.',
+      productos: ['Alimento animal (grano y forraje)', 'Almidón', 'Molienda (harinas)', 'Bioetanol']
     },
     6: {
       img: 'img/soja.jpg',
-      texto: 'La soja es una oleaginosa de ciclo estival y uno de los principales cultivos de exportación de Argentina. Se procesa industrialmente para separar el aceite de la harina proteica.',
-      productos: ['Aceite de soja', 'Harina/pellets (alimento balanceado)', 'Biodiesel']
+      texto: 'Es el cultivo extensivo de mayor cobertura en el este tucumano. Esta oleaginosa de ciclo estival encuentra en los suelos llanos de Burruyacú el entorno ideal para su desarrollo a gran escala. Su producción se destina casi en su totalidad al complejo industrial aceitero y a los mercados de exportación.',
+      productos: ['Poroto de exportación', 'Aceite de soja', 'Harina y pellets', 'Biodiesel']
     },
     4: {
       img: 'img/monte.jpg',
-      texto: 'El monte nativo es la vegetación boscosa original de la región (Chaco Serrano y Selva Pedemontana en las zonas más húmedas de Tucumán). No es un cultivo: es lo que queda del ecosistema original cuando no fue desmontado, y cumple un rol clave en la regulación hídrica y la conservación del suelo de todo el territorio agrícola que lo rodea.',
-      productos: ['Biodiversidad y hábitat', 'Regulación del ciclo hídrico', 'Protección contra la erosión', 'Captura de carbono']
+      texto: 'Representa la vegetación boscosa original del territorio, que en Burruyacú marca la transición entre la Selva Pedemontana y el Chaco Seco. Aunque no es un área productiva, este ecosistema es un pilar fundamental: regula el ciclo del agua, previene la erosión y alberga la biodiversidad local frente al avance de la frontera agrícola.',
+      productos: ['Regulación hídrica', 'Refugio de biodiversidad', 'Protección de suelos', 'Fijación de carbono']
     },
     5: {
       img: 'img/pasturas.jpg',
-      texto: 'Las pasturas son superficies con pastizales naturales o implantados, destinadas principalmente a la alimentación del ganado. Pueden ser permanentes o parte de una rotación con cultivos agrícolas, y suelen ocupar los terrenos con mayores limitantes para la agricultura extensiva.',
-      productos: ['Carne (ganadería bovina)', 'Leche', 'Forraje', 'Cobertura y protección del suelo']
+      texto: 'Superficies de pastizales implantados (como el Gatton Panic) o naturales, destinadas a la cría y recría bovina. En el este tucumano, suelen ocupar los lotes con mayores limitantes de suelo o disponibilidad de agua donde la agricultura pierde rentabilidad, permitiendo integrar la ganadería al esquema productivo.',
+      productos: ['Alimentación bovina', 'Carne', 'Forraje de reserva', 'Cobertura del suelo']
     },
     7: {
       img: 'img/sorgo.jpg',
-      texto: 'El sorgo es un cereal de ciclo estival, más resistente a la sequía que el maíz. Se usa principalmente como forraje y alimento animal, y suele elegirse en los lotes con suelos más pobres o en años de menor disponibilidad de agua.',
-      productos: ['Alimento animal (grano y forraje)', 'Silaje', 'Etanol', 'Rotación y cobertura de suelos']
+      texto: 'Cereal de ciclo estival que destaca por su gran tolerancia a la sequía y a las altas temperaturas. En los planteos agrícolas de Burruyacú, suele elegirse como una alternativa rústica al maíz en los lotes de menor aptitud o durante campañas con pronósticos de escasez hídrica.',
+      productos: ['Alimento animal (grano)', 'Forraje y silaje', 'Aporte de rastrojo al suelo']
     },
     8: {
       img: 'img/barbecho.jpg',
-      texto: 'El barbecho es un lote agrícola que en el momento de la imagen está sin cultivo activo: tierra preparada o en descanso dentro de la rotación, entre una cosecha y la siembra siguiente. No genera un producto en sí, pero es una etapa necesaria del manejo del suelo.',
+      texto: 'Lote agrícola que, al momento de la captura de la imagen satelital, se encuentra sin cultivo activo. Es una etapa de descanso y preparación dentro de la rotación donde se busca acumular agua en el perfil del suelo y controlar malezas antes de realizar la próxima siembra estival.',
       productos: []
     }
   };
