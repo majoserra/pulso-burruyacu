@@ -2415,6 +2415,7 @@ const CROP_INFO = {
   }
 
   function selectClase(clase, elevM) {
+    if (elevM === undefined) quitarMarcador(); // elegido desde la barra: no hay punto que mostrar
     if (selectedClase === clase && elevM === undefined) {
       selectedClase = null; // click de nuevo sobre el mismo cultivo en la lista = deseleccionar
     } else {
@@ -2448,6 +2449,7 @@ const CROP_INFO = {
       <span class="sw" style="background:linear-gradient(135deg,#FF69B4,#8A2BE2,#228B22)"></span>
       <div class="crop-row-main"><div class="crop-row-top"><span class="crop-name">Ver todos</span></div></div>`;
     rowAll.addEventListener('click', () => {
+      quitarMarcador();   // <- NUEVA
       selectedClase = null;
       setHighlight(null);
       updateSidebarActive();
@@ -2627,6 +2629,13 @@ const CROP_INFO = {
     scene.add(marcador);
   }
 
+  // Quita el palito del terreno (y libera su memoria)
+  function quitarMarcador() {
+    if (!marcador) return;
+    scene.remove(marcador);
+    marcador.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+    marcador = null;
+  }
   // Hover: pasar el mouse por encima identifica el cultivo en tiempo real (desktop).
   renderer.domElement.addEventListener('mousemove', (ev) => {
     const result = pickAt(ev.clientX, ev.clientY);
