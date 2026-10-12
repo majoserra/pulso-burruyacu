@@ -2090,12 +2090,12 @@ function actualizarHistoria(i) {
   // Tiempo de lectura de cada año. El primero (2018) es solo el punto de partida, sin gráfico
   // de comparación, así que pasa rápido. El resto depende del largo del texto (sin contar etiquetas HTML).
   // Tiempos de lectura (ms). Ajustá estas tres constantes a gusto.
-  const MS_ANIO_BASE   = 13000; // 2018: año de partida, sin gráfico de comparación
-  const MS_LECTURA_MIN = 4500; // mínimo del resto de los años (antes 3500)
-  const MS_POR_CARACTER = 50;  // por cada letra del texto (antes 40)
+  const MS_ANIO_BASE   = 5000; // 2018: año de partida, sin gráfico de comparación
+  const MS_LECTURA_MIN = 4500; // tiempo mínimo base para todos los años
+  const MS_POR_CARACTER = 50;  // milisegundos por cada letra del texto
 
   function tiempoLectura(indice) {
-    if (indice === 0) return MS_ANIO_BASE;
+    // Al sacar la condición especial, 2018 también calcula su tiempo según el texto
     const texto = (NARRATIVA_ANIO[serie[indice].anio] || '').replace(/<[^>]*>/g, '');
     return MS_LECTURA_MIN + texto.length * MS_POR_CARACTER;
   }
