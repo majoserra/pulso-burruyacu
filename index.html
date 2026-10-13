@@ -2940,34 +2940,42 @@ document.getElementById('tourSkip').addEventListener('click', terminarTour);
   const VEL_GIRO = 65;                    // grados por segundo
   const GIRO_PREVIO = 70;                 // grados que le faltan por recorrer cuando arranca el vuelo
   const INCLINACION_INICIAL = -15;        // inclinación del globo al empezar
-  const CRUCE = 0.72;                     // en qué punto del vuelo aparece el mapa de departamentos (0 a 1)
+  const CRUCE = 0.80;                     // en qué punto del vuelo aparece el mapa de departamentos (0 a 1)
   const URL_MUNDO = 'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json';
 
-  let cruzado = false, terminado = false, raf = 0;
+  let terminado = false, raf = 0;
 
-  // Hace aparecer el mapa de departamentos (el globo se desvanece con un fundido)
-  function cruzar() {
-    if (cruzado) return;
-    cruzado = true;
+  // Mientras el globo corre, el mapa de departamentos queda oculto por JS (no depende de ninguna clase CSS)
+  function ocultarMapa() {
+    mapWrap.style.transition = 'none';
+    mapWrap.style.opacity = '0';
+    mapWrap.style.pointerEvents = 'none';
+  }
+  // Devuelve el control a tu CSS original: el mapa queda visible y clickeable
+  function mostrarMapa() {
+    mapWrap.style.transition = '';
+    mapWrap.style.opacity = '';
+    mapWrap.style.pointerEvents = '';
+    canvas.style.transition = '';
+    canvas.style.opacity = '';
     splash.classList.remove('globo', 'zoomeando');
     splash.classList.add('espera-hint');
     setTimeout(() => splash.classList.remove('espera-hint'), 1000);
     canvas.classList.add('oculto');
   }
   function terminar() {
-    cruzar();
     if (terminado) return;
     terminado = true;
     cancelAnimationFrame(raf);
+    mostrarMapa();
     setTimeout(() => { canvas.style.display = 'none'; }, 1000);
   }
   if (btnSaltar) btnSaltar.addEventListener('click', terminar);
-
   // Sin librerías o con "reducir movimiento" activado: directo al mapa
   const sinGlobo = !window.d3 || !d3.geoOrthographic || !window.topojson ||
     (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   if (sinGlobo) { terminar(); return; }
-
+  ocultarMapa(); 
   const ctx = canvas.getContext('2d');
   const proy = d3.geoOrthographic().clipAngle(90).precision(0.5);
   const path = d3.geoPath(proy, ctx);
@@ -3047,8 +3055,12 @@ document.getElementById('tourSkip').addEventListener('click', terminarTour);
         lam = lamFin + (lamT - lamFin) * e;
         phi = INCLINACION_INICIAL + (phiT - INCLINACION_INICIAL) * e;
         escala = R * Math.pow(zoom, e);
-        if (!cruzado) splash.classList.add('zoomeando');
-        if (k >= CRUCE) cruzar();
+        splash.classList.add('zoomeando');
+        // el mapa de departamentos se funde recién al final del zoom; el globo se desvanece a la par
+        const aMapa = Math.min(1, Math.max(0, (k - CRUCE) / (1 - CRUCE)));
+        mapWrap.style.opacity = String(aMapa);
+        canvas.style.transition = 'none';
+        canvas.style.opacity = String(1 - aMapa);
       }
       dibujar(now, lam, phi, escala, cx, cy, k);
       if (k >= 1) { terminar(); return; }
