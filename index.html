@@ -1069,7 +1069,6 @@
 
 /* mientras el globo gira, el mapa de departamentos espera (invisible pero con su tamaño) */
 #splash.globo #mapWrap { opacity: 0; pointer-events: none; }
-#splash.globo #introHint, #splash.espera-hint #introHint { visibility: hidden; animation: none; }
 
 /* durante el zoom, el título se apaga y vuelve cuando aparece el mapa */
 #splash .intro-title, #splash .intro-tag { transition: opacity .6s ease; }
@@ -1089,6 +1088,10 @@
 .depto { fill: #222a36; stroke: rgba(255,255,255,.3); }
 .depto:hover { fill: #2e3748; }
 
+/* mientras corre el globo, se frenan las animaciones del mapa (que está oculto) para liberar el hilo principal */
+#splash.globo .burruyacu.pulse,
+#splash.globo .intro-ping::before,
+#splash.globo .intro-ping::after { animation-play-state: paused; }
   
 </style>
 </head>
@@ -1827,7 +1830,14 @@ async function intentarAutoCarga() {
   construirEscena(DATA_SOURCES.dem, serie);
 }
   
-intentarAutoCarga();
+// La carga pesada del terreno la dispara la intro del globo, para no trabar la animación
+let cargaIniciada = false;
+function arrancarCarga() {
+  if (cargaIniciada) return;
+  cargaIniciada = true;
+  intentarAutoCarga();
+}
+setTimeout(arrancarCarga, 15000); // red de seguridad: pase lo que pase, a los 15 s arranca
 
 function buildScene(demArr, clasifLookup, texture, n, aspect, texInfo, serie, indiceInicial) {
   let min = Infinity, max = -Infinity;
@@ -2930,7 +2940,8 @@ document.getElementById('tourSkip').addEventListener('click', terminarTour);
   const canvas = document.getElementById('globoCanvas');
   const mapWrap = document.getElementById('mapWrap');
   const btnSaltar = document.getElementById('globoSaltar');
-  if (!splash || !canvas || !mapWrap) return;
+  const hint = document.getElementById('introHint');
+  if (!splash || !canvas || !mapWrap) { arrancarCarga(); return; }
 
   // ----- Parámetros ajustables -----
   const TUC = { lon: -65.4, lat: -27.0 }; // centro de la provincia
@@ -2940,54 +2951,67 @@ document.getElementById('tourSkip').addEventListener('click', terminarTour);
   const VEL_GIRO = 65;                    // grados por segundo
   const GIRO_PREVIO = 70;                 // grados que le faltan por recorrer cuando arranca el vuelo
   const INCLINACION_INICIAL = -15;        // inclinación del globo al empezar
-  const CRUCE = 0.80;                     // en qué punto del vuelo aparece el mapa de departamentos (0 a 1)
+  const CRUCE = 0.80;                     // desde qué punto del vuelo se funde el mapa (y el texto de ayuda)
+  const INICIO_CARGA = 0.90;              // punto del vuelo en que empieza a cargarse el terreno 3D (0 = apenas arranca el vuelo, 1 = al final)
   const URL_MUNDO = 'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json';
 
   let terminado = false, raf = 0;
+  let tituloApagado = false, tituloVuelto = false, cargaDisparada = false;
 
-  // Mientras el globo corre, el mapa de departamentos queda oculto por JS (no depende de ninguna clase CSS)
-  function ocultarMapa() {
+  // Mientras el globo corre, el mapa y el texto de ayuda quedan ocultos por JS
+  function ocultarIntroMapa() {
     mapWrap.style.transition = 'none';
     mapWrap.style.opacity = '0';
     mapWrap.style.pointerEvents = 'none';
+    if (hint) { hint.style.animation = 'none'; hint.style.opacity = '0'; }
+    canvas.style.transition = 'none';
   }
-  // Devuelve el control a tu CSS original: el mapa queda visible y clickeable
-  function mostrarMapa() {
+  // Devuelve el control a tu CSS original
+  function mostrarIntroMapa() {
     mapWrap.style.transition = '';
     mapWrap.style.opacity = '';
     mapWrap.style.pointerEvents = '';
+    if (hint) { hint.style.animation = ''; hint.style.opacity = ''; }
     canvas.style.transition = '';
     canvas.style.opacity = '';
     splash.classList.remove('globo', 'zoomeando');
-    splash.classList.add('espera-hint');
-    setTimeout(() => splash.classList.remove('espera-hint'), 1000);
     canvas.classList.add('oculto');
   }
   function terminar() {
     if (terminado) return;
     terminado = true;
     cancelAnimationFrame(raf);
-    mostrarMapa();
+    mostrarIntroMapa();
+    arrancarCarga();                                         // por si no se había disparado todavía
     setTimeout(() => { canvas.style.display = 'none'; }, 1000);
   }
   if (btnSaltar) btnSaltar.addEventListener('click', terminar);
+
   // Sin librerías o con "reducir movimiento" activado: directo al mapa
   const sinGlobo = !window.d3 || !d3.geoOrthographic || !window.topojson ||
     (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   if (sinGlobo) { terminar(); return; }
-  ocultarMapa(); 
+  ocultarIntroMapa();
+
   const ctx = canvas.getContext('2d');
-  const proy = d3.geoOrthographic().clipAngle(90).precision(0.5);
+  const proy = d3.geoOrthographic().clipAngle(90).precision(1);
   const path = d3.geoPath(proy, ctx);
   const ESFERA = { type: 'Sphere' };
-  let W = 0, H = 0;
+  let W = 0, H = 0, geom = null;
 
+  // Se mide una sola vez (y al cambiar el tamaño de la ventana), no en cada cuadro
   function medir() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     W = window.innerWidth; H = window.innerHeight;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     proy.clipExtent([[0, 0], [W, H]]);
+    const r = mapWrap.getBoundingClientRect();               // el globo se centra donde va a aparecer el mapa
+    const R = Math.max(80, r.width * 0.5);
+    geom = {
+      cx: r.left + r.width / 2, cy: r.top + r.height / 2, R,
+      zoom: (r.height / (TUC_ALTO_GRADOS * Math.PI / 180)) / R
+    };
   }
   medir();
   window.addEventListener('resize', medir);
@@ -3032,6 +3056,7 @@ document.getElementById('tourSkip').addEventListener('click', terminarTour);
     tierra = topojson.feature(mundo, mundo.objects.land);
     argentina = topojson.feature(mundo, mundo.objects.countries).features.find(f => f.properties.name === 'Argentina');
     fronteras = topojson.mesh(mundo, mundo.objects.countries, (a, b) => a !== b);
+    medir();                                                 // el layout ya está asentado: se vuelve a medir antes de arrancar
 
     const lamT = -TUC.lon, phiT = -TUC.lat;                  // rotación que deja a Tucumán en el centro
     const lamFin = lamT - GIRO_PREVIO;                       // dónde termina el giro libre
@@ -3041,10 +3066,7 @@ document.getElementById('tourSkip').addEventListener('click', terminarTour);
     function frame(now) {
       if (terminado) return;
       const t = now - t0;
-      const r = mapWrap.getBoundingClientRect();             // el globo se centra donde va a aparecer el mapa
-      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      const R = Math.max(80, r.width * 0.5);
-      const zoom = (r.height / (TUC_ALTO_GRADOS * Math.PI / 180)) / R;
+      const { cx, cy, R, zoom } = geom;
 
       let lam, phi, escala, k = 0;
       if (t < MS_GIRO) {
@@ -3055,12 +3077,18 @@ document.getElementById('tourSkip').addEventListener('click', terminarTour);
         lam = lamFin + (lamT - lamFin) * e;
         phi = INCLINACION_INICIAL + (phiT - INCLINACION_INICIAL) * e;
         escala = R * Math.pow(zoom, e);
-        splash.classList.add('zoomeando');
-        // el mapa de departamentos se funde recién al final del zoom; el globo se desvanece a la par
+
+        if (!tituloApagado) { tituloApagado = true; splash.classList.add('zoomeando'); }
+        // mapa, texto de ayuda y título aparecen recién al final del zoom; el globo se desvanece a la par
         const aMapa = Math.min(1, Math.max(0, (k - CRUCE) / (1 - CRUCE)));
-        mapWrap.style.opacity = String(aMapa);
-        canvas.style.transition = 'none';
-        canvas.style.opacity = String(1 - aMapa);
+        if (aMapa > 0) {
+          if (!tituloVuelto) { tituloVuelto = true; splash.classList.remove('zoomeando'); }
+          mapWrap.style.opacity = String(aMapa);
+          if (hint) hint.style.opacity = String(aMapa);
+          canvas.style.opacity = String(1 - aMapa);
+        }
+        // la carga pesada del terreno 3D arranca cuando ya casi terminó el zoom
+        if (!cargaDisparada && k >= INICIO_CARGA) { cargaDisparada = true; arrancarCarga(); }
       }
       dibujar(now, lam, phi, escala, cx, cy, k);
       if (k >= 1) { terminar(); return; }
